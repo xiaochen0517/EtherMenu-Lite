@@ -12,8 +12,6 @@ import java.security.SecureRandom;
 import java.util.*;
 
 import zombie.GameWindow;
-import zombie.core.network.ByteBufferWriter;
-import zombie.network.PacketTypes;
 import zombie.network.GameClient;
 
 public class ProtectionManagerX {
@@ -272,51 +270,19 @@ public class ProtectionManagerX {
     }
 
     private void sendPacket(String command, Map<String, Object> data) {
-        try {
-            if (GameClient.connection == null) return;
-
-            // Start ModData packet
-            ByteBufferWriter writer = GameClient.connection.startPacket();
-            PacketTypes.PacketType.PlayerUpdateReliable.doPacket(writer);
-
-            // Write module ID and command
-            writer.putUTF(MODULE_ID);  // Module ID (EtherHammerX)
-            writer.putUTF(command);    // Command name
-
-            // Write data map
-            writer.putInt(data.size()); // Number of entries
-            for (Map.Entry<String, Object> entry : data.entrySet()) {
-                writer.putUTF(entry.getKey());
-
-                Object value = entry.getValue();
-                if (value instanceof String) {
-                    writer.putByte((byte)0);
-                    writer.putUTF((String)value);
-                }
-                else if (value instanceof Long) {
-                    writer.putByte((byte)1);
-                    writer.putLong((Long)value);
-                }
-                else if (value instanceof Integer) {
-                    writer.putByte((byte)2);
-                    writer.putInt((Integer)value);
-                }
-                else if (value instanceof Float) {
-                    writer.putByte((byte)3);
-                    writer.putFloat((Float)value);
-                }
-                else if (value instanceof Boolean) {
-                    writer.putByte((byte)4);
-                    writer.putBoolean((Boolean)value);
-                }
-            }
-
-            // Send the packet
-            PacketTypes.PacketType.PlayerUpdateReliable.send(GameClient.connection);
-
-        } catch (Exception e) {
-            Logger.printLog("Error sending packet: " + e.getMessage());
-        }
+        // B42.16 protocol guard — sending disabled.
+        //
+        // This helper used to serialize the custom "EtherHammerX" text protocol
+        // (UTF module id + command + map) into a PlayerUpdateReliable packet. The
+        // server parses PlayerUpdateReliable with PlayerPacketReliable.parseServer(),
+        // which expects the binary PlayerPacket layout (PlayerPacketReliable extends
+        // PlayerPacket). A UTF-8 module id in place of the packet body causes
+        // deserialization failure and trips AntiCheat.PacketException (Ban policy,
+        // maxSuspiciousCounter=1) or garbage values that trigger Speed/NoClip checks.
+        //
+        // Rewrite over PacketTypes.PacketType.ClientCommand (GameServer.receiveClientCommand)
+        // if a custom channel is ever needed.
+        Logger.printLog("sendPacket(\"" + command + "\") disabled: PlayerUpdateReliable carries a binary PlayerPacket payload in B42; use ClientCommand instead");
     }
 
     // Helper method to read data from incoming packets

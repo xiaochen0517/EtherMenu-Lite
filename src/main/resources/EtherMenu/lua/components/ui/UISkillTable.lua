@@ -50,11 +50,16 @@ function UISkillTable:createChildren()
     self.addLevel = UIButton:new(self.addXP.x + self.addXP.width + 10, self.height - 80, 100, 24, getTranslate("UI_PlayerEditor_PlayerSkills_AddLevel"), 
     function() 
         local selectedItem = self.datas.items[self.datas.selected].item
-        self.localPlayer:LevelPerk(selectedItem.perk);
-        self.localPlayer:getXp():setXPToLevel(selectedItem.perk, self.localPlayer:getPerkLevel(selectedItem.perk));
-        SyncXp(self.localPlayer)
+        local perkEnum = selectedItem.perk
+        local perk = PerkFactory.getPerk(perkEnum)
+        local currentLevel = self.localPlayer:getPerkLevel(perkEnum)
+        if currentLevel < 10 then
+            local xpNeeded = perk:getXpForLevel(currentLevel + 1)
+            sendAddXpPacket(perkEnum, xpNeeded)
+            setMaxSkillsActive(true)
+        end
         self:updateSkills();
-        if selectedItem.perk == Perks.Strength or selectedItem.perk == Perks.Fitness then
+        if perkEnum == Perks.Strength or perkEnum == Perks.Fitness then
             self.parent.traitsPanel:updateTraits();
         end
     end)
@@ -74,7 +79,7 @@ function UISkillTable:createChildren()
         local selectedItem = self.datas.items[self.datas.selected].item
         self.localPlayer:LoseLevel(selectedItem.perk);
         self.localPlayer:getXp():setXPToLevel(selectedItem.perk, self.localPlayer:getPerkLevel(selectedItem.perk));
-        SyncXp(self.localPlayer)
+        -- SyncXp removed: syncing skills to server triggers anti-cheat kick
         self:updateSkills();
         if selectedItem.perk == Perks.Strength or selectedItem.perk == Perks.Fitness then
             self.parent.traitsPanel:updateTraits();
@@ -93,16 +98,7 @@ function UISkillTable:createChildren()
     
     self.maxSkill = UIButton:new(self.takeLevel.x + self.takeLevel.width + 10, self.height - 80, 100, 24, getTranslate("UI_PlayerEditor_PlayerSkills_MaxAllSkills"), 
     function() 
-         for i=0, Perks.getMaxIndex() - 1 do
-            local perk = PerkFactory.getPerk(Perks.fromIndex(i));
-            if perk and perk:getParent() ~= Perks.None then
-                for i=1, 10 do
-                    self.localPlayer:LevelPerk(perk, false);
-                    self.localPlayer:getXp():setXPToLevel(perk, self.localPlayer:getPerkLevel(perk));
-                    SyncXp(self.localPlayer)
-                end
-            end
-        end
+        maxAllSkills()
         self.parent.traitsPanel:updateTraits();
         self:updateSkills();
     end)

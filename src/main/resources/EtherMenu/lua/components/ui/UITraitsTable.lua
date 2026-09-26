@@ -52,7 +52,7 @@ function UITraitsTable:createChildren()
     self.deleteTrait = UIButton:new(self.addTrait.x + self.addTrait.width + 10, self.height - 80, 100, 24, getTranslate("UI_PlayerEditor_PlayerTraits_DeleteTrait"), 
     function() 
         self.localPlayer:getCharacterTraits():remove(self.datas.items[self.datas.selected].item:getType());
-        SyncXp(self.localPlayer);
+        -- SyncXp removed: syncing traits to server triggers anti-cheat kick
         self:updateTraits();
     end)
     self.deleteTrait:initialise();

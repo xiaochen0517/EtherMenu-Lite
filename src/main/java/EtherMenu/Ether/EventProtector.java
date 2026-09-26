@@ -9,19 +9,28 @@ import zombie.network.packets.character.PlayerPacket;
 import zombie.network.PacketTypes;
 import zombie.network.ZomboidNetData;
 
-import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * EventProtector - Prevents anti-cheat from monitoring login/logout events
+ *
+ * PZ Build 42.16 compatibility notes:
+ *  - PacketTypes.PacketType.Validate no longer exists. The old single-packet
+ *    validation was replaced by the layered pipeline:
+ *    PacketAuthorization (capability check) -> INetworkPacket.isConsistent
+ *    (structure check) -> per-packet AntiCheat[] (behaviour checks), plus the
+ *    Checksum packet (Lua/script/anim integrity) and per-connection
+ *    PacketValidator counters.
+ *  - IsoPlayer no longer has a "connected" field and UdpConnection no longer
+ *    has a "validated" field. Connection state is GameClient.connection != null;
+ *    checksum state lives in UdpConnection.checksumState.
  */
 public class EventProtector {
     private static EventProtector instance;
     private final GameClientWrapper wrapper;
     private final Map<String, Long> lastChecks = new HashMap<>();
     private final Set<String> protectedEvents = new HashSet<>();
-    private static final long CHECK_COOLDOWN = 2000; // 5 seconds cooldown between checks
+    private static final long CHECK_COOLDOWN = 2000; // 2 seconds cooldown between checks
     private final SafeAPI safeAPI;
 
     private EventProtector() {
@@ -153,12 +162,11 @@ public class EventProtector {
             // Clear any pending network data
             wrapper.clearIncomingNetData();
 
-            IsoPlayer player = IsoPlayer.getInstance();
-            if (player != null) {
-                // Use secure ID generation
-                player.setOnlineID((short)new Random().nextInt(10000));
-                setFieldValue(player, "connected");
-            }
+            // NOTE (B42.16): onlineId is assigned by the server during the
+            // CreatePlayer/ConnectedPacket handshake. Overwriting it locally with a
+            // random value desynchronizes the player<->connection mapping, so it
+            // must not be touched here. The IsoPlayer "connected" field no longer
+            // exists either.
 
             // Initialize protected state
             initializeProtectedState();
@@ -170,7 +178,9 @@ public class EventProtector {
     private void initializeProtectedState() {
         try {
             if (GameClient.connection != null) {
-                setFieldValue(GameClient.connection, "validated");
+                // NOTE (B42.16): UdpConnection no longer has a "validated" field.
+                // Checksum state is tracked in UdpConnection.checksumState and is
+                // driven by the Checksum packet handshake, not by a local flag.
                 wrapper.clearIncomingNetData();
             }
         } catch (Exception e) {
@@ -213,17 +223,16 @@ public class EventProtector {
         return false;
     }
 
-    private static void setFieldValue(Object obj, String fieldName) {
-        try {
-            java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(obj, true);
-        } catch (Exception e) {
-            Logger.printLog("Error setting field value: " + e.getMessage());
-        }
-    }
-
     // Modified method to hook into network packets
+    /**
+     * Observe incoming packets without dropping any of them.
+     *
+     * B42.16: this used to drop Login / PlayerConnect / PlayerUpdateReliable (and
+     * the since-removed Validate) packets. Those packets are REQUIRED on the
+     * client to complete the login handshake, the Checksum exchange and the 30s
+     * player-update keepalive (PacketValidator.playerUpdateTimeout). Dropping
+     * them caused immediate desync/disconnect, so this is observe-only now.
+     */
     public static void filterIncomingPackets() {
         try {
             GameClientWrapper wrapper = GameClientWrapper.get();
@@ -231,28 +240,27 @@ public class EventProtector {
 
             if (netData == null) return;
 
-            // Create a new list for filtered packets
-            ArrayList<ZomboidNetData> filteredData = new ArrayList<>();
-
+            int login = 0, playerConnect = 0, playerUpdate = 0;
             for (ZomboidNetData packet : netData) {
-                if (packet == null) continue;
+                if (packet == null || packet.type == null) continue;
 
                 short packetId = packet.type.getId();
-                // Only keep non-anticheat packets
-                if (packetId != PacketTypes.PacketType.Validate.getId() &&
-                        packetId != PacketTypes.PacketType.PlayerConnect.getId() &&
-                        packetId != PacketTypes.PacketType.Login.getId() &&
-                        packetId != PacketTypes.PacketType.PlayerUpdateReliable.getId()) {
-                    filteredData.add(packet);
+                if (packetId == PacketTypes.PacketType.Login.getId()) {
+                    login++;
+                } else if (packetId == PacketTypes.PacketType.PlayerConnect.getId()) {
+                    playerConnect++;
+                } else if (packetId == PacketTypes.PacketType.PlayerUpdateReliable.getId()) {
+                    playerUpdate++;
                 }
             }
 
-            // Clear and update the netData list with filtered packets
-            netData.clear();
-            netData.addAll(filteredData);
-
+            if (login + playerConnect + playerUpdate > 0) {
+                Logger.printLog("Observed incoming packets: Login=" + login
+                        + " PlayerConnect=" + playerConnect
+                        + " PlayerUpdateReliable=" + playerUpdate);
+            }
         } catch (Exception e) {
-            Logger.printLog("Error filtering packets: " + e.getMessage());
+            Logger.printLog("Error observing packets: " + e.getMessage());
         }
     }
 
@@ -264,12 +272,9 @@ public class EventProtector {
         IsoPlayer player = IsoPlayer.getInstance();
         if (player != null) {
             try {
-                // Use reflection to check connection state
-                Field connectedField = player.getClass().getDeclaredField("connected");
-                connectedField.setAccessible(true);
-                boolean connected = (boolean)connectedField.get(player);
-
-                if (connected) {
+                // B42.16: IsoPlayer no longer has a "connected" field.
+                // Connection state is derived from GameClient.connection.
+                if (GameClient.connection != null) {
                     sendFakePlayerUpdate(player);
                 }
             } catch (Exception e) {

@@ -20,6 +20,7 @@ import zombie.core.network.ByteBufferWriter;
 import zombie.core.textures.Texture;
 import zombie.inventory.InventoryItem;
 import zombie.inventory.InventoryItemFactory;
+import zombie.characters.skills.PerkFactory;
 import zombie.network.GameClient;
 import zombie.network.PacketTypes;
 import zombie.network.ServerOptions;
@@ -90,6 +91,34 @@ public class EtherLuaMethods {
    public static void setAccentUIColor(float var0, float var1, float var2) {
       Color var3 = new Color(var0, var1, var2);
       EtherMain.getInstance().etherAPI.mainUIAccentColor = var3;
+   }
+
+   @LuaMethod(
+      name = "getMenuKeyID",
+      global = true
+   )
+   public static int getMenuKeyID() {
+      return EtherMain.getInstance().etherAPI.menuKeyID;
+   }
+
+   @LuaMethod(
+      name = "setMenuKeyID",
+      global = true
+   )
+   public static void setMenuKeyID(int keyID) {
+      EtherMain.getInstance().etherAPI.menuKeyID = keyID;
+   }
+
+   @LuaMethod(
+      name = "getKeyName",
+      global = true
+   )
+   public static String getKeyName(int keyID) {
+      try {
+         return org.lwjglx.input.Keyboard.getKeyName(keyID);
+      } catch (Exception e) {
+         return "Key " + keyID;
+      }
    }
 
    @LuaMethod(
@@ -265,6 +294,56 @@ public class EtherLuaMethods {
                }
             }
          }
+      }
+   }
+
+   @LuaMethod(name = "sendAddXpPacket", global = true)
+   public static void sendAddXpPacket(Object perk, double amount) {
+      try {
+         IsoPlayer player = IsoPlayer.getInstance();
+         if (player != null && !player.isDead()) {
+            PerkFactory.Perk perkEnum = (PerkFactory.Perk) perk;
+            // Apply locally only — server-side AddXP is blocked by AntiCheatXP for non-admins
+            // Last param false = suppress halo text notification
+            player.getXp().AddXP(perkEnum, (float) amount, false, false, true, false);
+         }
+      } catch (Exception e) {
+         Logger.printLog("[XP] Error in sendAddXpPacket: " + e.getMessage());
+      }
+   }
+
+   @LuaMethod(name = "maxAllSkills", global = true)
+   public static void maxAllSkills() {
+      try {
+         IsoPlayer player = IsoPlayer.getInstance();
+         if (player == null || player.isDead()) return;
+
+         java.util.ArrayList<PerkFactory.Perk> perkList = PerkFactory.PerkList;
+         for (int i = 0; i < perkList.size(); i++) {
+            PerkFactory.Perk perk = perkList.get(i);
+            int currentLevel = player.getPerkLevel(perk);
+            if (currentLevel < 10) {
+               // Use setPerkLevelDebug — completely silent, no notifications/sounds/events
+               player.setPerkLevelDebug(perk, 10);
+               player.getXp().setXPToLevel(perk, 10);
+            }
+         }
+
+         // Enable XP load blocking so server sync cannot revert
+         EtherMain main = EtherMain.getInstance();
+         if (main != null && main.etherAPI != null) {
+            main.etherAPI.isMaxAllSkills = true;
+         }
+      } catch (Exception e) {
+         Logger.printLog("[XP] Error in maxAllSkills: " + e.getMessage());
+      }
+   }
+
+   @LuaMethod(name = "setMaxSkillsActive", global = true)
+   public static void setMaxSkillsActive(boolean enabled) {
+      EtherMain main = EtherMain.getInstance();
+      if (main != null && main.etherAPI != null) {
+         main.etherAPI.isMaxAllSkills = enabled;
       }
    }
 
@@ -748,6 +827,89 @@ public class EtherLuaMethods {
       EtherMain.getInstance().etherAPI.isBypassDebugMode = var0;
    }
 
+   // ── Anti-Cheat Bypass ────────────────────────────────────────────
+
+   @LuaMethod(name = "isAntiCheatBypass", global = true)
+   public static boolean isAntiCheatBypass() {
+      return EtherMain.getInstance().etherAPI.isAntiCheatBypass;
+   }
+
+   @LuaMethod(name = "toggleAntiCheatBypass", global = true)
+   public static void toggleAntiCheatBypass(boolean enabled) {
+      EtherMain.getInstance().etherAPI.isAntiCheatBypass = enabled;
+   }
+
+   @LuaMethod(name = "getAntiCheatStats", global = true)
+   public static String getAntiCheatStats() {
+      ServerAntiCheatBypass ac = ServerAntiCheatBypass.getInstance();
+      return "Validations blocked: " + ac.getTotalValidationHooks()
+              + " | Kicks blocked: " + ac.getTotalKicksBlocked();
+   }
+
+   // ── Sync Blocker ─────────────────────────────────────────────────
+
+   @LuaMethod(name = "isSyncBlocker", global = true)
+   public static boolean isSyncBlocker() {
+      return EtherMain.getInstance().etherAPI.isSyncBlocker;
+   }
+
+   @LuaMethod(name = "toggleSyncBlocker", global = true)
+   public static void toggleSyncBlocker(boolean enabled) {
+      EtherMain.getInstance().etherAPI.isSyncBlocker = enabled;
+   }
+
+   @LuaMethod(name = "protectStat", global = true)
+   public static void protectStat(String statName, double value) {
+      ServerSyncBlocker.getInstance().protectStat(statName, (float) value);
+   }
+
+   @LuaMethod(name = "unprotectStat", global = true)
+   public static void unprotectStat(String statName) {
+      ServerSyncBlocker.getInstance().unprotectStat(statName);
+   }
+
+   @LuaMethod(name = "protectSkill", global = true)
+   public static void protectSkill(String perkName, double level, double xp) {
+      ServerSyncBlocker.getInstance().protectSkill(perkName, (int) level, (float) xp);
+   }
+
+   @LuaMethod(name = "captureCurrentStats", global = true)
+   public static void captureCurrentStats() {
+      ServerSyncBlocker.getInstance().captureCurrentStats();
+   }
+
+   @LuaMethod(
+      name = "toggleBuildCheat",
+      global = true
+   )
+   public static void toggleBuildCheat(boolean var0) {
+      EtherMain.getInstance().etherAPI.isBuildCheat = var0;
+   }
+
+   @LuaMethod(
+      name = "isBuildCheat",
+      global = true
+   )
+   public static boolean isBuildCheat() {
+      return EtherMain.getInstance().etherAPI.isBuildCheat;
+   }
+
+   @LuaMethod(
+      name = "toggleFarmingCheat",
+      global = true
+   )
+   public static void toggleFarmingCheat(boolean var0) {
+      EtherMain.getInstance().etherAPI.isFarmingCheat = var0;
+   }
+
+   @LuaMethod(
+      name = "isFarmingCheat",
+      global = true
+   )
+   public static boolean isFarmingCheat() {
+      return EtherMain.getInstance().etherAPI.isFarmingCheat;
+   }
+
    @LuaMethod(
       name = "toggleUnlimitedEndurance",
       global = true
@@ -1077,29 +1239,27 @@ public class EtherLuaMethods {
 
    @LuaMethod(name = "isFullVersion", global = true)
    public static boolean isFullVersion() {
-      try {
-         return EtherMain.getInstance().licenseManager != null && EtherMain.getInstance().licenseManager.isLicensed();
-      } catch (NoClassDefFoundError e) {
-         return false;
-      }
+      return LicenseBridge.isLicensed();
    }
 
    @LuaMethod(name = "activateLicense", global = true)
    public static boolean activateLicense(String key) {
-      try {
-         return LicenseManager.getInstance().activate(key);
-      } catch (NoClassDefFoundError e) {
-         return false;
-      }
+      return LicenseBridge.activate(key);
    }
 
    @LuaMethod(name = "getLicenseKey", global = true)
    public static String getLicenseKey() {
-      try {
-         return LicenseManager.getInstance().getLicenseKey();
-      } catch (NoClassDefFoundError e) {
-         return "";
-      }
+      return LicenseBridge.getLicenseKey();
+   }
+
+   @LuaMethod(name = "getLicenseType", global = true)
+   public static String getLicenseType() {
+      return LicenseBridge.getLicenseType();
+   }
+
+   @LuaMethod(name = "getLicenseExpires", global = true)
+   public static String getLicenseExpires() {
+      return LicenseBridge.getExpiresDate();
    }
 
    @LuaMethod(name = "toggleEnableUnlimitedCarry", global = true)
@@ -1265,25 +1425,6 @@ public class EtherLuaMethods {
          instance = new EtherLuaMethods();
       }
       return instance;
-   }
-
-   @LuaMethod(name = "getMenuKeyID", global = true)
-   public static int getMenuKeyID() {
-      return EtherMain.getInstance().etherAPI.menuKeyID;
-   }
-
-   @LuaMethod(name = "setMenuKeyID", global = true)
-   public static void setMenuKeyID(int keyID) {
-      EtherMain.getInstance().etherAPI.menuKeyID = keyID;
-   }
-
-   @LuaMethod(name = "getKeyName", global = true)
-   public static String getKeyName(int keyID) {
-      try {
-         String name = org.lwjglx.input.Keyboard.getKeyName(keyID);
-         if (name != null && !name.isEmpty()) return name;
-      } catch (Exception ignored) {}
-      return "Key " + keyID;
    }
 
    @LuaMethod(name = "setMenuLanguage", global = true)

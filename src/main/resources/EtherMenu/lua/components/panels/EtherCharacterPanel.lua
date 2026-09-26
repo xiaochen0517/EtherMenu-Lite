@@ -68,11 +68,13 @@ function EtherCharacterPanel:createChildren()
 
     self:addCheckBox(getTranslate("UI_CharacterPanel_BuildCheat"), function(isChecked)
         ISBuildMenu.cheat = isChecked;
-    end, ISBuildMenu.cheat, false);
+        toggleBuildCheat(isChecked);
+    end, isBuildCheat(), false);
 
     self:addCheckBox(getTranslate("UI_CharacterPanel_FarmingCheat"), function(isChecked)
         ISFarmingMenu.cheat = isChecked;
-    end, ISFarmingMenu.cheat, false);
+        toggleFarmingCheat(isChecked);
+    end, isFarmingCheat(), false);
 
     self:addCheckBox(getTranslate("UI_CharacterPanel_GodMode"), function(isChecked)
         toggleGodMode(isChecked);

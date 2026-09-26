@@ -35,7 +35,7 @@ function UIModalAddTrait:createChildren()
         
         self.localPlayer:getCharacterTraits():add(trait:getType());
         self.localPlayer:modifyTraitXPBoost(trait:getType(), false);
-        SyncXp(self.localPlayer);
+        -- SyncXp removed: syncing traits to server triggers anti-cheat kick
         UITraitsTable.instance:updateTraits();
     end)
     self.acceptButton:initialise();

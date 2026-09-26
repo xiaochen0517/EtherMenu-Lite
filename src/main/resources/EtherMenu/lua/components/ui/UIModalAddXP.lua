@@ -49,8 +49,8 @@ function UIModalAddXP:createChildren()
 
         if amount and amount ~= "" then
             amount = tonumber(amount);
-            getPlayer():getXp():AddXP(skill:getType(), amount, false, false, true);
-            sendAddXp(getPlayer(), skill:getType(), amount);
+            sendAddXpPacket(skill:getType(), amount);
+            setMaxSkillsActive(true)
             UISkillTable.instance:updateSkills();
         end
     end)

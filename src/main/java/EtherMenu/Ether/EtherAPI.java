@@ -164,6 +164,8 @@ public class EtherAPI {
    public boolean isZombieDontAttack;
    public boolean isNoRecoil;
    public boolean isBypassDebugMode;
+   public boolean isBuildCheat;
+   public boolean isFarmingCheat;
    public boolean isUnlimitedCarry;
    public boolean isUnlimitedCondition;
    public boolean isUnlimitedEndurance;
@@ -203,8 +205,27 @@ public class EtherAPI {
    public boolean isMapDrawAllPlayers;
    public boolean isMapDrawVehicles;
    public boolean isMapDrawZombies;
+   public boolean isAntiCheatBypass;
+   public boolean isSyncBlocker;
+   public boolean isMaxAllSkills;
    public int menuKeyID = 59;
    public String menuLanguage = "";
+
+   /**
+    * Called from bytecode-injected hook in PlayerXpPacket.parse() BEFORE XP.load().
+    * Returns true to skip the server XP sync entirely, keeping locally-set skill levels.
+    */
+   public static boolean shouldSkipXpLoad(IsoPlayer player) {
+      try {
+         EtherMain main = EtherMain.getInstance();
+         if (main == null || main.etherAPI == null) return false;
+         if (!main.etherAPI.isMaxAllSkills) return false;
+         if (player != IsoPlayer.getInstance()) return false;
+         return true;
+      } catch (Throwable ignored) {
+      }
+      return false;
+   }
 
    public void saveConfig(String var1) {
       String var2 = "EtherMenu/config/" + var1 + ".properties";
@@ -226,6 +247,8 @@ public class EtherAPI {
       var3.setProperty("isZombieDontAttack", Boolean.toString(this.isZombieDontAttack));
       var3.setProperty("isNoRecoil", Boolean.toString(this.isNoRecoil));
       var3.setProperty("isBypassDebugMode", Boolean.toString(this.isBypassDebugMode));
+      var3.setProperty("isBuildCheat", Boolean.toString(this.isBuildCheat));
+      var3.setProperty("isFarmingCheat", Boolean.toString(this.isFarmingCheat));
       var3.setProperty("isUnlimitedCarry", Boolean.toString(this.isUnlimitedCarry));
       var3.setProperty("isUnlimitedCondition", Boolean.toString(this.isUnlimitedCondition));
       var3.setProperty("isUnlimitedEndurance", Boolean.toString(this.isUnlimitedEndurance));
@@ -265,6 +288,8 @@ public class EtherAPI {
       var3.setProperty("isMapDrawAllPlayers", Boolean.toString(this.isMapDrawAllPlayers));
       var3.setProperty("isMapDrawVehicles", Boolean.toString(this.isMapDrawVehicles));
       var3.setProperty("isMapDrawZombies", Boolean.toString(this.isMapDrawZombies));
+      var3.setProperty("isAntiCheatBypass", Boolean.toString(this.isAntiCheatBypass));
+      var3.setProperty("isSyncBlocker", Boolean.toString(this.isSyncBlocker));
       var3.setProperty("menuKeyID", Integer.toString(this.menuKeyID));
       var3.setProperty("menuLanguage", this.menuLanguage);
 
@@ -330,6 +355,8 @@ public class EtherAPI {
       this.isZombieDontAttack = ConfigUtils.getBooleanFromConfig(var3, "isZombieDontAttack", false);
       this.isNoRecoil = ConfigUtils.getBooleanFromConfig(var3, "isNoRecoil", false);
       this.isBypassDebugMode = ConfigUtils.getBooleanFromConfig(var3, "isBypassDebugMode", false);
+      this.isBuildCheat = ConfigUtils.getBooleanFromConfig(var3, "isBuildCheat", false);
+      this.isFarmingCheat = ConfigUtils.getBooleanFromConfig(var3, "isFarmingCheat", false);
       this.isUnlimitedCarry = ConfigUtils.getBooleanFromConfig(var3, "isUnlimitedCarry", false);
       this.isUnlimitedCondition = ConfigUtils.getBooleanFromConfig(var3, "isUnlimitedCondition", false);
       this.isUnlimitedEndurance = ConfigUtils.getBooleanFromConfig(var3, "isUnlimitedEndurance", false);
@@ -369,6 +396,8 @@ public class EtherAPI {
       this.isMapDrawAllPlayers = ConfigUtils.getBooleanFromConfig(var3, "isMapDrawAllPlayers", false);
       this.isMapDrawVehicles = ConfigUtils.getBooleanFromConfig(var3, "isMapDrawVehicles", false);
       this.isMapDrawZombies = ConfigUtils.getBooleanFromConfig(var3, "isMapDrawZombies", false);
+      this.isAntiCheatBypass = ConfigUtils.getBooleanFromConfig(var3, "isAntiCheatBypass", false);
+      this.isSyncBlocker = ConfigUtils.getBooleanFromConfig(var3, "isSyncBlocker", false);
       this.menuKeyID = ConfigUtils.getIntFromConfig(var3, "menuKeyID", 59);
       this.menuLanguage = var3.getProperty("menuLanguage", "");
       if (!this.menuLanguage.isEmpty()) {
@@ -414,6 +443,8 @@ public class EtherAPI {
       this.isZombieDontAttack = ConfigUtils.getBooleanFromConfig(var1, "isZombieDontAttack", false);
       this.isNoRecoil = ConfigUtils.getBooleanFromConfig(var1, "isNoRecoil", false);
       this.isBypassDebugMode = ConfigUtils.getBooleanFromConfig(var1, "isBypassDebugMode", false);
+      this.isBuildCheat = ConfigUtils.getBooleanFromConfig(var1, "isBuildCheat", false);
+      this.isFarmingCheat = ConfigUtils.getBooleanFromConfig(var1, "isFarmingCheat", false);
       this.isUnlimitedCarry = ConfigUtils.getBooleanFromConfig(var1, "isUnlimitedCarry", false);
       this.isUnlimitedCondition = ConfigUtils.getBooleanFromConfig(var1, "isUnlimitedCondition", false);
       this.isUnlimitedEndurance = ConfigUtils.getBooleanFromConfig(var1, "isUnlimitedEndurance", false);
@@ -453,6 +484,8 @@ public class EtherAPI {
       this.isMapDrawAllPlayers = ConfigUtils.getBooleanFromConfig(var1, "isMapDrawAllPlayers", false);
       this.isMapDrawVehicles = ConfigUtils.getBooleanFromConfig(var1, "isMapDrawVehicles", false);
       this.isMapDrawZombies = ConfigUtils.getBooleanFromConfig(var1, "isMapDrawZombies", false);
+      this.isAntiCheatBypass = ConfigUtils.getBooleanFromConfig(var1, "isAntiCheatBypass", false);
+      this.isSyncBlocker = ConfigUtils.getBooleanFromConfig(var1, "isSyncBlocker", false);
       this.menuKeyID = ConfigUtils.getIntFromConfig(var1, "menuKeyID", 59);
       this.menuLanguage = var1.getProperty("menuLanguage", "");
       if (!this.menuLanguage.isEmpty()) {
@@ -513,8 +546,9 @@ public class EtherAPI {
    private void initializeProtectedState() {
       try {
          if (GameClient.connection != null) {
-            // Set connection as validated
-            setFieldValue(GameClient.connection);
+            // NOTE (B42.16): UdpConnection no longer has a "validated" field;
+            // checksum state lives in UdpConnection.checksumState and is driven
+            // by the Checksum packet handshake, so there is nothing to set here.
 
             // Use wrapper to clear network data
             GameClientWrapper wrapper = GameClientWrapper.get();
@@ -539,15 +573,8 @@ public class EtherAPI {
       }
    }
 
-   private static void setFieldValue(Object obj) {
-      try {
-         java.lang.reflect.Field field = obj.getClass().getDeclaredField("validated");
-         field.setAccessible(true);
-         field.set(obj, true);
-      } catch (Exception e) {
-         Logger.printLog("Error setting field value: " + e.getMessage());
-      }
-   }
+   // Removed setFieldValue(Object): it reflected on a "validated" field that
+   // UdpConnection no longer has in B42.16, so it could only fail silently.
 
    // Inner class for safe method exposure
    private class SafeExposer extends Exposer {
@@ -636,14 +663,23 @@ public class EtherAPI {
    private void updateLocalPlayerFeatures() {
       IsoPlayer var1 = IsoPlayer.getInstance();
       if (var1 != null) {
-         // Stealth cheat flags: only set minimal flags that don't trigger admin behavior
+         // Stealth cheat flags: only set flags that are NOT encoded in booleanVariables.
+         // GOD_MODE and HEALTH are EXCLUDED because isGodMod() leaks as bit 1024 in
+         // PlayerPacket.booleanVariables, which AntiCheatPower validates against anticheatMask.
+         // God mode works via setAvoidDamage() + interceptSetHealth() + stat overrides instead.
          try {
             PlayerCheats cheats = var1.getCheats();
             if (cheats != null) {
-               // NoClip and Invisible: local-only flags (not serialized in PlayerPacket)
                cheats.set(CheatType.NO_CLIP, this.isEnableNoclip);
                cheats.set(CheatType.INVISIBLE, this.isEnableInvisible);
                cheats.set(CheatType.TIMED_ACTION_INSTANT, this.isTimedActionCheat);
+               cheats.set(CheatType.BUILD, this.isBuildCheat);
+               cheats.set(CheatType.FARMING, this.isFarmingCheat);
+               cheats.set(CheatType.UNLIMITED_CARRY, this.isUnlimitedCarry);
+               cheats.set(CheatType.UNLIMITED_ENDURANCE, this.isUnlimitedEndurance);
+               cheats.set(CheatType.UNLIMITED_AMMO, this.isUnlimitedAmmo);
+               cheats.set(CheatType.ZOMBIES_DONT_ATTACK, this.isZombieDontAttack);
+               // GOD_MODE and HEALTH intentionally NOT set here
             }
          } catch (Throwable ignored) {
          }
@@ -832,7 +868,9 @@ public class EtherAPI {
       boolean var2 = acProtection != null && acProtection;
       boolean var3 = GameServer.server;
       boolean var4 = GameServer.coop;
-      Core.debug = var1 && this.isBypassDebugMode && (!var2 && var3 || var4 || !var3);
+      // Set DebugBridge instead of Core.debug to avoid network packet leakage.
+      // Core.getDebug()/isInDebug()/isDebugEnabled() are ASM-patched to read from DebugBridge.
+      EtherMenu.DebugBridge.debugOverride = var1 && this.isBypassDebugMode && (!var2 && var3 || var4 || !var3);
    }
 
    @SubscribeLuaEvent(
@@ -851,7 +889,7 @@ public class EtherAPI {
 
    public void updateUltraPlayerVision() {
       if (this.isVisualEnable360Vision) {
-         ArrayList var1 = IsoWorld.instance.getCell().getVehicles();
+         Set var1 = IsoWorld.instance.getCell().getVehicles();
          if (var1 != null && !var1.isEmpty()) {
             Iterator var2 = var1.iterator();
 
@@ -890,7 +928,7 @@ public class EtherAPI {
       if (this.isVisualsEnable && this.isVisualsVehiclesEnable) {
          IsoPlayer var1 = IsoPlayer.getInstance();
          if (var1 != null) {
-            ArrayList var2 = IsoWorld.instance.getCell().getVehicles();
+            Set var2 = IsoWorld.instance.getCell().getVehicles();
             float var3 = PlayerUtils.getScreenPositionX(var1);
             float var4 = PlayerUtils.getScreenPositionY(var1);
             float var5 = this.vehiclesUIColor.a;
@@ -1006,10 +1044,31 @@ public class EtherAPI {
    @SubscribeLuaEvent(eventName = "OnRenderTick")
    public synchronized void updateAPI() {
       try {
-         updateLocalPlayerFeatures();
          bypassDebugMode();
+         updateAntiCheatBypass();
+         updateSyncBlocker();
+         updateLocalPlayerFeatures();
       } catch (Throwable e) {
          Logger.printLog("Error in updateAPI: " + e);
+      }
+   }
+
+   private void updateAntiCheatBypass() {
+      ServerAntiCheatBypass.getInstance().setGlobalBypass(this.isAntiCheatBypass);
+   }
+
+   private void updateSyncBlocker() {
+      ServerSyncBlocker blocker = ServerSyncBlocker.getInstance();
+      if (this.isSyncBlocker) {
+         if (!blocker.isAnyProtectionActive()) {
+            blocker.enableFullProtection();
+            blocker.captureCurrentStats();
+         }
+         blocker.reapplyProtectedValues();
+      } else {
+         if (blocker.isAnyProtectionActive()) {
+            blocker.disableFullProtection();
+         }
       }
    }
 }

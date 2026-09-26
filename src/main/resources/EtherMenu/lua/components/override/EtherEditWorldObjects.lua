@@ -54,18 +54,18 @@ function EtherEditWorldObjects.doDebugObjectMenu(player, context, worldobjects, 
 			subMenu:addOption(getTranslate("UI_DebugObject_FireplaceSetFuel"), obj, EtherEditWorldObjects.OnFireplaceSetFuel)
 		end
 		
-		if CCampfireSystem.instance:isValidIsoObject(obj) then
+		if CCampfireSystem and CCampfireSystem.instance and CCampfireSystem.instance:isValidIsoObject(obj) then
 			subMenu:addOption(getTranslate("UI_DebugObject_CampfireZeroFuel"), obj, EtherEditWorldObjects.OnCampfireZeroFuel)
 			subMenu:addOption(getTranslate("UI_DebugObject_CampfireSetFuel"), obj, EtherEditWorldObjects.OnCampfireSetFuel)
 		end
-		if not metalDrum and CMetalDrumSystem:isValidIsoObject(obj) then
+		if not metalDrum and CMetalDrumSystem and CMetalDrumSystem:isValidIsoObject(obj) then
 			if obj:hasModData() and not obj:getModData().haveLogs and not obj:getModData().haveCharcoal then
 				subMenu:addOption(getTranslate("UI_DebugObject_MDrumZeroFuel"), obj, EtherEditWorldObjects.OnMetalDrumZeroWater)
 				subMenu:addOption(getTranslate("UI_DebugObject_MDrumSetFuel"), obj, EtherEditWorldObjects.OnMetalDrumSetWater)
 			end
 			metalDrum = obj
 		end
-		if not rainBarrel and CRainBarrelSystem:isValidIsoObject(obj) then
+		if not rainBarrel and CRainBarrelSystem and CRainBarrelSystem:isValidIsoObject(obj) then
 			subMenu:addOption(getTranslate("UI_DebugObject_RBarrelZeroFuel"), obj, EtherEditWorldObjects.OnRainBarrelZeroWater)
 			subMenu:addOption(getTranslate("UI_DebugObject_RBarrelSetFuel"), obj, EtherEditWorldObjects.OnRainBarrelSetWater)
 			rainBarrel = obj
@@ -284,6 +284,7 @@ function EtherEditWorldObjects.OnBBQSetFuel(obj)
 end
 
 function EtherEditWorldObjects.OnCampfireZeroFuel(obj)
+	if not CCampfireSystem.instance then return end
 	local playerObj = getSpecificPlayer(0)
 	local args = { x = obj:getX(), y = obj:getY(), z = obj:getZ(), fuelAmt = 0 }
 	CCampfireSystem.instance:sendCommand(playerObj, 'setFuel', args)
@@ -297,12 +298,15 @@ local function OnCampfireSetFuel2(target, button, obj)
 			local fuelAmt = math.min(tonumber(text), 100.0)
 			fuelAmt = math.max(fuelAmt, 0.0)
 			local args = { x = obj:getX(), y = obj:getY(), z = obj:getZ(), fuelAmt = fuelAmt }
-			CCampfireSystem.instance:sendCommand(playerObj, 'setFuel', args)
+			if CCampfireSystem.instance then
+				CCampfireSystem.instance:sendCommand(playerObj, 'setFuel', args)
+			end
 		end
 	end
 end
 
 function EtherEditWorldObjects.OnCampfireSetFuel(obj)
+	if not CCampfireSystem.instance then return end
 	local luaObject = CCampfireSystem.instance:getLuaObjectOnSquare(obj:getSquare())
 	if not luaObject then return end
 	local modal = ISTextBox:new(0, 0, 280, 180, getTranslate("UI_DebugObject_FuelLevel"), tostring(luaObject.fuelAmt), nil, OnCampfireSetFuel2, nil, obj)
@@ -426,3 +430,28 @@ function EtherEditWorldObjects.OnRainBarrelSetWater(obj)
 end
 
 Events.OnFillWorldObjectContextMenu.Add(EtherEditWorldObjects.doEtherContextDebugMenu);
+
+-- Monkey-patch vanilla DebugContextMenu.doDebugObjectMenu to fix CCampfireSystem.instance nil crash (PZ B42 bug)
+-- Must be deferred to OnGameBoot so DebugContextMenu is already loaded
+local function _applyDebugContextMenuPatch()
+	if DebugContextMenu and DebugContextMenu.doDebugObjectMenu then
+		local _origDoDebugObjectMenu = DebugContextMenu.doDebugObjectMenu
+		DebugContextMenu.doDebugObjectMenu = function(player, context, worldobjects, test)
+			local _origIsValid = nil
+			if not CCampfireSystem or not CCampfireSystem.instance then
+				-- Create a temporary stub so vanilla code doesn't crash
+				CCampfireSystem = CCampfireSystem or {}
+				CCampfireSystem.instance = { isValidIsoObject = function() return false end }
+				_origIsValid = true
+			end
+			local ok, err = pcall(_origDoDebugObjectMenu, player, context, worldobjects, test)
+			if _origIsValid then
+				CCampfireSystem.instance = nil
+			end
+			if not ok then
+				print("[EtherMenu] Suppressed vanilla DebugContextMenu error: " .. tostring(err))
+			end
+		end
+	end
+end
+Events.OnGameBoot.Add(_applyDebugContextMenuPatch)

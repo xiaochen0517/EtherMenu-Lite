@@ -7,19 +7,13 @@ public class EtherMain {
    public EtherTranslator etherTranslator;
    public EtherLuaManager etherLuaManager;
    public EtherAPI etherAPI;
-   public LicenseManager licenseManager;
 
    private EtherMain() {
    }
 
    public void init() {
       Logger.printLog("Initializing EtherMenu...");
-      try {
-         this.licenseManager = LicenseManager.getInstance();
-         this.licenseManager.init();
-      } catch (NoClassDefFoundError e) {
-         Logger.printLog("License module not available");
-      }
+      LicenseBridge.init();
       this.etherTranslator = new EtherTranslator();
       this.etherTranslator.loadTranslations();
       this.etherAPI = new EtherAPI();
@@ -27,7 +21,7 @@ public class EtherMain {
       this.etherLuaManager = new EtherLuaManager();
       this.etherLuaManager.loadLua();
       Logger.printLog("Initialization EtherMenu was completed!");
-      Logger.printLog("Edition: " + (this.licenseManager != null && this.licenseManager.isLicensed() ? "LICENSED" : "COMMUNITY"));
+      Logger.printLog("Edition: " + (LicenseBridge.isLicensed() ? "LICENSED" : "COMMUNITY"));
    }
 
    public static EtherMain getInstance() {
