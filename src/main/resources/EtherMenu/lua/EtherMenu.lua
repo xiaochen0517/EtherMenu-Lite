@@ -39,8 +39,8 @@ end
 EtherMain                   = ISPanel:derive("EtherMain"); -- Наследование от ISPanel
 EtherMain.instance          = nil; --Экземпляр окна
 EtherMain.menuKeyID         = getMenuKeyID(); -- Клавиша открытия окна - F1 (59)
-EtherMain.defaultWidth      = 510; -- Стандартная ширина окна
-EtherMain.defaultHeight     = 500; -- Стандартная высота окна
+EtherMain.defaultWidth      = 765; -- Стандартная ширина окна (+50% для высоких разрешений)
+EtherMain.defaultHeight     = 750; -- Стандартная высота окна (+50% для высоких разрешений)
 EtherMain.currentTabID      = 1; -- Последняя открытая вкладка
 EtherMain.accentColor       = {r = getAccentUIColor():getR(), g = getAccentUIColor():getG(), b = getAccentUIColor():getB(), a = 1.0}; -- Акцентный цвет
 
