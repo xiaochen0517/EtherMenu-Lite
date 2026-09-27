@@ -82,12 +82,15 @@ function UISlider:render()
 
     self:drawRect(0, self.sliderBarByThumbOffset / 2, self.sliderBarSize.width, self.sliderBarSize.height, self.sliderBarColor.a, self.sliderBarColor.r, self.sliderBarColor.g, self.sliderBarColor.b);
     self:drawRect(thumbPosX, 0, self.sliderThumbSize.width, self.sliderThumbSize.height, self.sliderThumbColor.a, self.sliderThumbColor.r, self.sliderThumbColor.g, self.sliderThumbColor.b);
-    
-    
-    self:drawTextRight(tostring(self.minValue), - 5, self.sliderThumbSize.height / 2 - 7, 1.0, 1.0, 1.0, 0.3, UIFont.Small);
-    self:drawText(tostring(self.maxValue),self.sliderBarSize.width + 5, self.sliderThumbSize.height / 2 - 7, 1.0, 1.0, 1.0, 0.3, UIFont.Small);
+
+    -- Подписи выравниваются по центру ползунковой дорожки с учётом реальной высоты шрифта (B42)
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local barCenterY = self.sliderBarByThumbOffset / 2 + self.sliderBarSize.height / 2 - fontHeightSmall / 2;
+
+    self:drawTextRight(tostring(self.minValue), - 5, barCenterY, 1.0, 1.0, 1.0, 0.3, UIFont.Small);
+    self:drawText(tostring(self.maxValue),self.sliderBarSize.width + 5, barCenterY, 1.0, 1.0, 1.0, 0.3, UIFont.Small);
 	
-    self:drawTextCentre(tostring(self.currentValue), thumbPosX + 3, self.sliderThumbSize.height + 5, self.sliderThumbColor.r, self.sliderThumbColor.g, self.sliderThumbColor.b, self.sliderThumbColor.a, UIFont.Small);
+    self:drawTextCentre(tostring(self.currentValue), thumbPosX + 3, self.sliderThumbSize.height + 2, self.sliderThumbColor.r, self.sliderThumbColor.g, self.sliderThumbColor.b, self.sliderThumbColor.a, UIFont.Small);
 end
 
 

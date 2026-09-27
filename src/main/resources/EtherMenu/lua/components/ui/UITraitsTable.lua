@@ -5,8 +5,6 @@ require "ISUI/ISPanel"
 --*********************************************************
 UITraitsTable = ISPanel:derive("UITraitsTable");
 
-local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small)
-
 --*********************************************************
 --* Создание дочерних элементов
 --*********************************************************
@@ -16,7 +14,8 @@ function UITraitsTable:createChildren()
     self.datas = ISScrollingListBox:new(0, 0, self.width, self.height - 90);
     self.datas:initialise();
     self.datas:instantiate();
-    self.datas.itemheight = fontHeightSmall + 4 * 2
+    -- Высота строки зависит от реальной высоты шрифта (B42)
+    self.datas.itemheight = getTextManager():getFontHeight(UIFont.Small) + 4 * 2
     self.datas.selected = 0;
     self.datas.joypadParent = self;
     self.datas.font = UIFont.NewSmall;
@@ -142,10 +141,13 @@ function UITraitsTable:drawDatas(y, item, alt)
     local clipY = math.max(0, y + self:getYScroll())
     local clipY2 = math.min(self.height, y + self:getYScroll() + self.itemheight)
 
+    -- Вертикальное центрирование текста в строке таблицы
+    local textY = y + (self.itemheight - getTextManager():getFontHeight(UIFont.Small)) / 2;
+
     -- Устанавливаем маску для первого столбца
     self:suspendStencil()
     self:clampStencilRectToParent(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
-    self:drawText(item.item:getLabel(), 25, y + 4, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(item.item:getLabel(), 25, textY, 1, 1, 1, 1, UIFont.Small);
     -- Удаляем маску
     self:clearStencilRect()
     self:resumeStencil()
@@ -155,7 +157,7 @@ function UITraitsTable:drawDatas(y, item, alt)
     -- Устанавливаем маску для второго столбца
     self:suspendStencil()
     self:clampStencilRectToParent(self.columns[2].size, clipY, self.width - self.columns[2].size - scrollBarOffset, clipY2 - clipY)
-    self:drawText(descrtiption, self.columns[2].size + 10, y + 4, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(descrtiption, self.columns[2].size + 10, textY, 1, 1, 1, 1, UIFont.Small);
     -- Удаляем маску
     self:clearStencilRect()
     self:resumeStencil()
@@ -163,7 +165,7 @@ function UITraitsTable:drawDatas(y, item, alt)
     self:repaintStencilRect(0, clipY, self.width - scrollBarOffset, clipY2 - clipY)
 
     local iconX = 4
-    local iconSize = fontHeightSmall;
+    local iconSize = getTextManager():getFontHeight(UIFont.Small);
 
     local texture = item.item:getTexture()
     if texture then

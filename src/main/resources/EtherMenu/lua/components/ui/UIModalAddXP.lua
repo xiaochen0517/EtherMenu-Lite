@@ -18,7 +18,14 @@ function UIModalAddXP:createChildren()
     end
     table.sort(self.perkList, function(a,b) return not string.sort(a:getName(), b:getName()) end)
 
-    self.combo = ISComboBox:new(10, 10, self.width - 20, 30, nil,nil);
+    -- В B42 высота шрифта динамическая, вся геометрия считается от неё
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local comboHeight = math.max(30, fontHeightSmall + 12);
+    local labelHeight = fontHeightSmall;
+    local entryHeight = math.max(24, fontHeightSmall + 8);
+    local buttonHeight = math.max(25, fontHeightSmall + 8);
+
+    self.combo = ISComboBox:new(10, 10, self.width - 20, comboHeight, nil,nil);
     self.combo:initialise();
     self:addChild(self.combo);
     for i=1,#self.perkList do
@@ -26,19 +33,21 @@ function UIModalAddXP:createChildren()
         self.combo:addOption(perk:getName() .. " (" .. PerkFactory.getPerkName(perk:getParent()) .. ")");
     end
 
-    local amountLbl = ISLabel:new(10, self.combo.x + self.combo.height, 20, getText("IGUI_PlayerStats_Amount"), 1, 1, 1, 1, UIFont.Small, true)
+    local amountLbl = ISLabel:new(10, self.combo.y + self.combo.height + 5, labelHeight, getText("IGUI_PlayerStats_Amount"), 1, 1, 1, 1, UIFont.Small, true)
     amountLbl:initialise()
     amountLbl:instantiate()
     self:addChild(amountLbl)
 
-    self.entry = ISTextEntryBox:new("1", 10, amountLbl.x + amountLbl.height + 30, self.width - 20, 24);
+    self.entry = ISTextEntryBox:new("1", 10, amountLbl.y + amountLbl.height + 5, self.width - 20, entryHeight);
     self.entry.font = UIFont.Small;
     self.entry:initialise();
     self.entry:instantiate();
     self.entry:setOnlyNumbers(true);
     self:addChild(self.entry);
 
-    self.acceptButton = UIButton:new(10, self.height - 35, 100, 25, getTranslate("UI_PlayerEditor_PlayerSkills_ModalAccept"), 
+    local buttonsY = self.entry.y + self.entry.height + 10;
+
+    self.acceptButton = UIButton:new(10, buttonsY, 100, buttonHeight, getTranslate("UI_PlayerEditor_PlayerSkills_ModalAccept"), 
     function() 
         local amount = self.entry:getText();
         local skill = self.perkList[self.combo.selected];
@@ -63,7 +72,7 @@ function UIModalAddXP:createChildren()
     self.acceptButton.isOnlyInGame = true;
     self:addChild(self.acceptButton);
 
-    self.closeButton = UIButton:new(self.acceptButton.x + self.acceptButton.width + 10, self.height - 35, 100, 25, getTranslate("UI_PlayerEditor_PlayerSkills_ModalClose"), 
+    self.closeButton = UIButton:new(self.acceptButton.x + self.acceptButton.width + 10, buttonsY, 100, buttonHeight, getTranslate("UI_PlayerEditor_PlayerSkills_ModalClose"), 
     function() 
         UIModalAddXP.instance:setVisible(false);
         UIModalAddXP.instance:removeFromUIManager();
@@ -77,6 +86,11 @@ function UIModalAddXP:createChildren()
     self.closeButton:setAnchorBottom(true);
     self.closeButton.isOnlyInGame = true;
     self:addChild(self.closeButton);
+
+    -- Подгоняем высоту окна под содержимое и сохраняем центрирование
+    local newHeight = buttonsY + self.acceptButton.height + 10;
+    self:setY(self:getY() - (newHeight - self.height) / 2);
+    self:setHeight(newHeight);
 end
 
 --*********************************************************

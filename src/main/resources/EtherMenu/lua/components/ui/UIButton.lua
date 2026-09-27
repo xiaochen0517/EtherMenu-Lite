@@ -58,16 +58,19 @@ end
 --** Отрисовка кнопки
 --************************************************************************--
 function UIButton:render()
+	-- Вертикальное центрирование текста по реальной высоте шрифта (B42: высота шрифта динамическая)
+	local textY = (self.height - getTextManager():getFontHeight(self.font)) / 2;
+
 	if self.isEnable then
 		if not self.onPressed then
 			self:drawRect( 0, 0, self.width, self.height, 1.0, EtherMain.accentColor.r, EtherMain.accentColor.g, EtherMain.accentColor.b)
 		else
 			self:drawRect( 0, 0, self.width, self.height, 0.8, EtherMain.accentColor.r, EtherMain.accentColor.g, EtherMain.accentColor.b)
 		end
-		self:drawTextCentre(self.title, self.width / 2, self.height / 2 - 8, 1.0, 1.0, 1.0, 1.0, self.font);
+		self:drawTextCentre(self.title, self.width / 2, textY, 1.0, 1.0, 1.0, 1.0, self.font);
 	else
 		self:drawRect( 0, 0, self.width, self.height, 1.0, 0.1, 0.1, 0.1)
-		self:drawTextCentre(self.title, self.width / 2, self.height / 2 - 8, 1.0, 1.0, 1.0, 0.3, self.font);
+		self:drawTextCentre(self.title, self.width / 2, textY, 1.0, 1.0, 1.0, 0.3, self.font);
 	end
 end
 
@@ -90,6 +93,12 @@ function UIButton:new (x, y, width, height, title, onClickMethod)
 
 	if width < (getTextManager():MeasureStringX(UIFont.Small, title) + 20) then
         width = getTextManager():MeasureStringX(UIFont.Small, title) + 20;
+    end
+
+    -- Кнопка обязана вместить текст: минимальная высота зависит от реальной высоты шрифта
+    local fontHeight = getTextManager():getFontHeight(UIFont.Small);
+    if height < (fontHeight + 8) then
+        height = fontHeight + 8;
     end
 	uiTableData.x = x;
 	uiTableData.y = y;

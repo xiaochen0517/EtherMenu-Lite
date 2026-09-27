@@ -11,7 +11,9 @@ EtherCharacterPanel = ISPanel:derive("EtherCharacterPanel"); -- Наследов
 function EtherCharacterPanel:addCheckBox(title, method, isSelected, isOnlyInGame)
     local checkBoxAmount = #self.checkBoxList;
     local checkboxX = 15;
-    local checkboxY = 10 + checkBoxAmount * 20;
+    -- Шаг между строками зависит от реальной высоты шрифта (B42)
+    local checkboxPitch = math.max(20, getTextManager():getFontHeight(UIFont.Small) + 6);
+    local checkboxY = 10 + checkBoxAmount * checkboxPitch;
 
     local checkbox = UICheckbox:new(checkboxX, checkboxY, title, isSelected, method);
     checkbox:initialise();

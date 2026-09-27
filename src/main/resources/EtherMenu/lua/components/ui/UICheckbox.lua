@@ -27,13 +27,17 @@ end
 --** Отрисовка чекбокса
 --************************************************************************--
 function UICheckbox:render()
+	-- Вертикальное центрирование текстуры и текста по реальной высоте шрифта
+	local textureY = (self.height - self.textureHeight) / 2;
+	local textY = (self.height - getTextManager():getFontHeight(self.font)) / 2;
+
 	if not self.isChecked then
-		self:drawTextureScaled(self.uncheckedTexture, 0, 0, self.textureWidth, self.textureHeight, 1.0, 1.0, 1.0, 1.0);
+		self:drawTextureScaled(self.uncheckedTexture, 0, textureY, self.textureWidth, self.textureHeight, 1.0, 1.0, 1.0, 1.0);
 	else
-		self:drawTextureScaled(self.checkedTexture, 0, 0, self.textureWidth, self.textureHeight, 1.0, EtherMain.accentColor.r, EtherMain.accentColor.g, EtherMain.accentColor.b);
+		self:drawTextureScaled(self.checkedTexture, 0, textureY, self.textureWidth, self.textureHeight, 1.0, EtherMain.accentColor.r, EtherMain.accentColor.g, EtherMain.accentColor.b);
 	end
 
-	self:drawText(self.title, self.textureWidth + self.marginTexture, self.textureHeight / 2 - 8, 1.0, 1.0, 1.0, 1.0, self.font);
+	self:drawText(self.title, self.textureWidth + self.marginTexture, textY, 1.0, 1.0, 1.0, 1.0, self.font);
 end
 
 --************************************************************************--
@@ -88,8 +92,8 @@ function UICheckbox:new (x, y, title, isChecked, onChecked)
 	uiTableData.onCheckedMethod = onChecked;
 	uiTableData.enable = true;
 
-	uiTableData.width = uiTableData.textureHeight + uiTableData.marginTexture + uiTableData.textWidth + 20;
-	uiTableData.height = uiTableData.textureHeight;
+	uiTableData.width = uiTableData.textureWidth + uiTableData.marginTexture + uiTableData.textWidth + 20;
+	uiTableData.height = math.max(uiTableData.textureHeight, uiTableData.fontHeight);
 	return uiTableData;
 end
 

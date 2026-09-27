@@ -5,8 +5,6 @@ require "ISUI/ISPanel"
 --*********************************************************
 UISkillTable = ISPanel:derive("UISkillTable");
 
-local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small)
-
 --*********************************************************
 --* Создание дочерних элементов
 --*********************************************************
@@ -16,7 +14,8 @@ function UISkillTable:createChildren()
     self.datas = ISScrollingListBox:new(0, 0, self.width, self.height - 90);
     self.datas:initialise();
     self.datas:instantiate();
-    self.datas.itemheight = fontHeightSmall + 4 * 2
+    -- Высота строки зависит от реальной высоты шрифта (B42)
+    self.datas.itemheight = getTextManager():getFontHeight(UIFont.Small) + 4 * 2
     self.datas.selected = 0;
     self.datas.joypadParent = self;
     self.datas.font = UIFont.NewSmall;
@@ -188,7 +187,8 @@ function UISkillTable:drawDatas(y, item, alt)
     self:drawRectBorder(self.columns[1].size, y, self.columns[3].size, self.itemheight, 0.5, self.borderColor.r, self.borderColor.g, self.borderColor.b);
     self:drawRectBorder(self.columns[1].size, y, self.columns[4].size, self.itemheight, 0.5, self.borderColor.r, self.borderColor.g, self.borderColor.b);
     
-    local yoff = 2;
+    -- Вертикальное центрирование текста в строке таблицы
+    local textY = y + (self.itemheight - getTextManager():getFontHeight(UIFont.Small)) / 2;
     local clipX = self.columns[1].size
     local clipX2 = self.columns[2].size
     local clipY = math.max(0, y + self:getYScroll())
@@ -197,13 +197,12 @@ function UISkillTable:drawDatas(y, item, alt)
     self:suspendStencil()
     self:clampStencilRectToParent(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
 
-    self:drawText(item.item.name, 5, y + yoff, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(item.item.name, 5, textY, 1, 1, 1, 1, UIFont.Small);
 
     self:clearStencilRect()
     self:resumeStencil()
 
-   
-    local yoff = 2;
+    
     local clipX = self.columns[2].size
     local clipX2 = self.columns[3].size
     local clipY = math.max(0, y + self:getYScroll())
@@ -211,12 +210,11 @@ function UISkillTable:drawDatas(y, item, alt)
     self:suspendStencil()
     self:clampStencilRectToParent(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
 
-    self:drawText(tostring(item.item.level), 5 + self.columns[2].size, y + yoff, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(tostring(item.item.level), 5 + self.columns[2].size, textY, 1, 1, 1, 1, UIFont.Small);
 
     self:clearStencilRect()
     self:resumeStencil()
     
-    local yoff = 2;
     local clipX = self.columns[3].size
     local clipX2 = self.columns[4].size
     local clipY = math.max(0, y + self:getYScroll())
@@ -224,22 +222,21 @@ function UISkillTable:drawDatas(y, item, alt)
     self:suspendStencil()
     self:clampStencilRectToParent(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
     if item.item.xpToLevel == -1 then
-        self:drawText("MAX", 5 + self.columns[3].size, y + yoff, 1, 1, 1, 1, UIFont.Small);
+        self:drawText("MAX", 5 + self.columns[3].size, textY, 1, 1, 1, 1, UIFont.Small);
     else
-        self:drawText(tostring(item.item.xp) .. "/" .. tostring(item.item.xpToLevel), 5 + self.columns[3].size, y + yoff, 1, 1, 1, 1, UIFont.Small);
+        self:drawText(tostring(item.item.xp) .. "/" .. tostring(item.item.xpToLevel), 5 + self.columns[3].size, textY, 1, 1, 1, 1, UIFont.Small);
     end
 
     self:clearStencilRect()
     self:resumeStencil()
 
-    local yoff = 2;
     local clipX = self.columns[4].size
     local clipY = math.max(0, y + self:getYScroll())
     local clipY2 = math.min(self.height, y + self:getYScroll() + self.itemheight)
     self:suspendStencil()
     self:clampStencilRectToParent(clipX, clipY, self.width - self.columns[4].size - 20, clipY2 - clipY)
 
-    self:drawText(tostring(item.item.boost), 5 + self.columns[4].size, y + yoff, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(tostring(item.item.boost), 5 + self.columns[4].size, textY, 1, 1, 1, 1, UIFont.Small);
 
     self:clearStencilRect()
     self:resumeStencil()

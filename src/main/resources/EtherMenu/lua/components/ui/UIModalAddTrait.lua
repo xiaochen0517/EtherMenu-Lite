@@ -21,7 +21,26 @@ function UIModalAddTrait:createChildren()
         end
     end
 
-    self.acceptButton = UIButton:new(10, self.height - 35, 100, 25, getTranslate("UI_PlayerEditor_PlayerTraits_ModalAccept"), 
+    -- В B42 высота шрифта динамическая, вся геометрия считается от неё
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local comboHeight = math.max(30, fontHeightSmall + 12);
+    local buttonHeight = math.max(25, fontHeightSmall + 8);
+
+    self.combo = ISComboBox:new(10, 10, self.width - 20, comboHeight, nil,nil);
+    self.combo:initialise();
+    self.goodTrait = {};
+    self:addChild(self.combo);
+
+    self.traitsSelector = UICheckbox:new(10, self.combo.y + self.combo.height + 10, getTranslate("UI_PlayerEditor_PlayerTraits_IsGoodTrait"), true, function ()
+        self:updateTraitsList();
+    end)
+    self.traitsSelector:initialise();
+    self.traitsSelector:instantiate();
+    self:addChild(self.traitsSelector);
+
+    local buttonsY = self.traitsSelector.y + self.traitsSelector.height + 10;
+
+    self.acceptButton = UIButton:new(10, buttonsY, 100, buttonHeight, getTranslate("UI_PlayerEditor_PlayerTraits_ModalAccept"), 
     function() 
         UIModalAddTrait.instance:setVisible(false);
         UIModalAddTrait.instance:removeFromUIManager();
@@ -48,7 +67,7 @@ function UIModalAddTrait:createChildren()
     self:addChild(self.acceptButton);
     table.insert(self.buttonList, self.acceptButton);
 
-    self.closeButton = UIButton:new(self.acceptButton.x + self.acceptButton.width + 10, self.height - 35, 100, 25, getTranslate("UI_PlayerEditor_PlayerTraits_ModalClose"), 
+    self.closeButton = UIButton:new(self.acceptButton.x + self.acceptButton.width + 10, buttonsY, 100, buttonHeight, getTranslate("UI_PlayerEditor_PlayerTraits_ModalClose"), 
     function() 
         UIModalAddTrait.instance:setVisible(false);
         UIModalAddTrait.instance:removeFromUIManager();
@@ -64,19 +83,12 @@ function UIModalAddTrait:createChildren()
     self:addChild(self.closeButton);
     table.insert(self.buttonList, self.closeButton);
 
-    self.combo = ISComboBox:new(10, 10, self.width - 20, 30, nil,nil);
-    self.combo:initialise();
-    self.goodTrait = {};
-    self:addChild(self.combo);
-
-    self.traitsSelector = UICheckbox:new(10, self.combo.y + self.combo.height + 10, getTranslate("UI_PlayerEditor_PlayerTraits_IsGoodTrait"), true, function ()
-        self:updateTraitsList();
-    end)
-    self.traitsSelector:initialise();
-    self.traitsSelector:instantiate();
-    self:addChild(self.traitsSelector);
-
     self:updateTraitsList();
+
+    -- Подгоняем высоту окна под содержимое и сохраняем центрирование
+    local newHeight = buttonsY + self.acceptButton.height + 10;
+    self:setY(self:getY() - (newHeight - self.height) / 2);
+    self:setHeight(newHeight);
 end
 
 --*********************************************************

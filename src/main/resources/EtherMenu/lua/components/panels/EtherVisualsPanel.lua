@@ -83,15 +83,19 @@ function EtherVisualsPanel:addSliderWithLabel(title, value, minValue, maxValue, 
         yOffset = 10;
     end
 
-    local sliderHeight= 10;
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local sliderHeight = 10;
     local sliderWidth = 100;
 
-    self:addLabel(10, self.yRowPosition + yOffset, title);
-    local slider = self:addSlider(self.width - sliderWidth - 50, self.yRowPosition + yOffset + 8, sliderWidth, sliderHeight, value, minValue, maxValue, method)
+    local labelY = self.yRowPosition + yOffset;
+    self:addLabel(10, labelY, title);
+    -- Слайдер располагается под подписью, а под ним ещё значение текущего параметра
+    local slider = self:addSlider(self.width - sliderWidth - 50, labelY + fontHeightSmall + 4, sliderWidth, sliderHeight, value, minValue, maxValue, method)
     
-    self:setScrollHeight(self:getScrollHeight() + sliderHeight + 5);
+    local rowHeight = fontHeightSmall + 4 + sliderHeight + 2 + fontHeightSmall + 5;
+    self:setScrollHeight(self:getScrollHeight() + rowHeight);
     
-    self.yRowPosition = self.yRowPosition + sliderHeight * 2 + 5 + yOffset;
+    self.yRowPosition = labelY + rowHeight;
 
     table.insert(self.uiElements, slider);
 

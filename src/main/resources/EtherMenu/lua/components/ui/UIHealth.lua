@@ -6,8 +6,6 @@ require "ISUI/ISPanel"
 UIHealth = ISPanel:derive("UIHealth"); -- Наследование от ISPanel
 UIHealth.instance = nil;
 
-local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small)
-
 
 --*********************************************************
 --* Создание метки
@@ -41,6 +39,10 @@ end
 function UIHealth:createChildren()
     ISPanel.createChildren(self);
 
+    -- В B42 высота шрифта динамическая, вся геометрия считается от неё
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    self.titleBarHeight = math.max(20, fontHeightSmall + 6);
+
     self.closeButton = ISButton:new(3, 0, 20, 20, "", self, function(self, button) self:close() end);
 	self.closeButton:initialise();
 	self.closeButton.borderColor.a = 0.0;
@@ -49,7 +51,11 @@ function UIHealth:createChildren()
 	self.closeButton:setImage(self.closeTexture);
 	self:addChild(self.closeButton);
 
-    self.datas = ISScrollingListBox:new(10, 80, self.width - 20, self.height - 210);
+    -- Шапка (строка заголовка + общий уровень здоровья) и 4 строки кнопок внизу
+    local headerHeight = self.titleBarHeight + 10 + fontHeightSmall + 10;
+    local buttonHeight = math.max(20, fontHeightSmall + 8);
+    local buttonsBlockHeight = 4 * (buttonHeight + 10) + 10;
+    self.datas = ISScrollingListBox:new(10, headerHeight, self.width - 20, self.height - headerHeight - buttonsBlockHeight);
     self.datas:initialise();
     self.datas:instantiate();
     self.datas.itemheight = fontHeightSmall + 4 * 2
@@ -237,7 +243,8 @@ function UIHealth:drawDatas(y, item, alt)
     self:suspendStencil()
     self:setStencilRect(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
     local name = BodyPartType.getDisplayName(item.item:getType())
-    self:drawText(name, 5, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    local textY = y + (self.itemheight - getTextManager():getFontHeight(UIFont.Small)) / 2;
+    self:drawText(name, 5, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
     -- Удаляем маску
     self:clearStencilRect()
     self:resumeStencil()
@@ -256,9 +263,9 @@ function UIHealth:drawDatas(y, item, alt)
         isDamaged = "-"
     end
     
-    self:drawText(tostring(partHealth).."%", self.columns[2].size + 10, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
-    self:drawText(tostring(isBandaged), self.columns[3].size + 10, y + 4, 1, 1, 1, 1, UIFont.Small);
-    self:drawText(tostring(isDamaged), self.columns[4].size + 10, y + 4, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(tostring(partHealth).."%", self.columns[2].size + 10, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    self:drawText(tostring(isBandaged), self.columns[3].size + 10, textY, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(tostring(isDamaged), self.columns[4].size + 10, textY, 1, 1, 1, 1, UIFont.Small);
 
     return y + self.itemheight;
 end
@@ -268,8 +275,9 @@ end
 function UIHealth:prerender()
     ISPanel.prerender(self)
 
-	self:drawRect( 0, 0, self.width, 20, 1.0, 0, 0, 0, 0.5)
-	self:drawTextCentre(self.title, self:getWidth() / 2, 1, 1, 1, 1, 1, UIFont.Small);
+	self:drawRect( 0, 0, self.width, self.titleBarHeight, 1.0, 0, 0, 0, 0.5)
+	local titleY = (self.titleBarHeight - getTextManager():getFontHeight(UIFont.Small)) / 2;
+	self:drawTextCentre(self.title, self:getWidth() / 2, titleY, 1, 1, 1, 1, 1, UIFont.Small);
 	
 end
 
@@ -282,7 +290,7 @@ function UIHealth:render()
 	local player = self.localPlayer;
 
     self:drawTexture(self.resizeimage, self.width-10, self.height - 10, 1, 1, 1, 1);
-    self:drawText(getTranslate("UI_Medic_TotalHealth")..tostring(round(player:getBodyDamage():getHealth())).. "%", 10, 30, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(getTranslate("UI_Medic_TotalHealth")..tostring(round(player:getBodyDamage():getHealth())).. "%", 10, self.titleBarHeight + 10, 1, 1, 1, 1, UIFont.Small);
 end
 
 --************************************************************************--

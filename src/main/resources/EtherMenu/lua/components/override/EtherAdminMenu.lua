@@ -2,8 +2,6 @@ require "ISUI/ISPanel"
 
 EtherAdminMenu = ISPanel:derive("EtherAdminMenu");
 
-local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
-
 --************************************************************************--
 --** ISPanel:initialise
 --**
@@ -30,6 +28,8 @@ end
 
 function EtherAdminMenu:create()
     local btnWid = 150
+    -- Высота шрифта в B42 динамическая, считаем её в момент создания панели
+    local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
     local btnHgt = math.max(25, FONT_HGT_SMALL + 3 * 2)
     local btnGapY = 5
     local padBottom = 10

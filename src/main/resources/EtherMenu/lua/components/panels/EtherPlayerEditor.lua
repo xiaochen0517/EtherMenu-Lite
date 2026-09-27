@@ -67,6 +67,12 @@ function EtherPlayerEditor:createChildren()
 
     if self.localPlayer == nil then return end;
 
+    -- Позиции строк считаются от реальной высоты шрифта (B42: высота динамическая)
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local fontHeightMedium = getTextManager():getFontHeight(UIFont.Medium);
+    local rowPitch = math.max(20, fontHeightSmall + 4);
+    local editButtonHeight = math.max(18, fontHeightSmall + 4);
+
 	self.avatarPanel = ISUI3DModel:new(10, 10, 64, 135)
 	self.avatarPanel:setVisible(true)
 	self.avatarPanel:setOutfitName("Foreman", false, false)
@@ -75,23 +81,32 @@ function EtherPlayerEditor:createChildren()
 	self.avatarPanel:setIsometric(false)
 	self:addChild(self.avatarPanel)
 
-    self:addLabel(getText("IGUI_PlayerStats_Username") .. " ".. self.localPlayer:getUsername(), 90, 10);
-    self:addLabel(getText("IGUI_PlayerStats_DisplayName").. " ".. self.localPlayer:getDisplayName(), 90, 30);
-    self:addLabel(getText("UI_characreation_forename").. ": " .. self.localPlayer:getDescriptor():getForename(), 90, 50);
-    self:addLabel(getText("UI_characreation_surname").. ": " .. self.localPlayer:getDescriptor():getSurname(), 90, 70);
+    local labelRow = 0;
+    local function nextLabelY()
+        local y = 10 + labelRow * rowPitch;
+        labelRow = labelRow + 1;
+        return y;
+    end
+
+    self:addLabel(getText("IGUI_PlayerStats_Username") .. " ".. self.localPlayer:getUsername(), 90, nextLabelY());
+    self:addLabel(getText("IGUI_PlayerStats_DisplayName").. " ".. self.localPlayer:getDisplayName(), 90, nextLabelY());
+    self:addLabel(getText("UI_characreation_forename").. ": " .. self.localPlayer:getDescriptor():getForename(), 90, nextLabelY());
+    self:addLabel(getText("UI_characreation_surname").. ": " .. self.localPlayer:getDescriptor():getSurname(), 90, nextLabelY());
     local charProf = self.localPlayer:getDescriptor():getCharacterProfession()
     local profDef = CharacterProfessionDefinition.getCharacterProfessionDefinition(charProf)
     local profName = profDef and profDef:getUIName() or ""
-    self:addLabel(getText("IGUI_PlayerStats_Profession").. " ".. profName, 90, 90);
-    -- self:addLabel(getText("IGUI_char_Survived_For").. ": " .. self.localPlayer:getTimeSurvived(), 90, 110);
-    self:addLabel(getText("IGUI_char_Survived_For").. ": " .. self.localPlayer:getTimeSurvived(), 90, 110);
-    local editTimeBtn = ISButton:new(250, 110, 60, 18, getTranslate("UI_PlayerEditor_EditStats"), self, self.onEditTimeButton)
+    self:addLabel(getText("IGUI_PlayerStats_Profession").. " ".. profName, 90, nextLabelY());
+    -- self:addLabel(getText("IGUI_char_Survived_For").. ": " .. self.localPlayer:getTimeSurvived(), 90, nextLabelY());
+    local survivedY = nextLabelY();
+    self:addLabel(getText("IGUI_char_Survived_For").. ": " .. self.localPlayer:getTimeSurvived(), 90, survivedY);
+    local editTimeBtn = ISButton:new(250, survivedY - 2, 60, editButtonHeight, getTranslate("UI_PlayerEditor_EditStats"), self, self.onEditTimeButton)
     editTimeBtn:initialise()
     editTimeBtn:instantiate()
     self:addChild(editTimeBtn)
-    -- self:addLabel(getText("IGUI_char_Zombies_Killed").. ": " .. tostring(self.localPlayer:getZombieKills()), 90, 130);
-    self:addLabel(getText("IGUI_char_Zombies_Killed").. ": " .. tostring(self.localPlayer:getZombieKills()), 90, 130);
-    local editKillsBtn = ISButton:new(250, 130, 60, 18, getTranslate("UI_PlayerEditor_EditStats"), self, self.onEditKillsButton)
+    -- self:addLabel(getText("IGUI_char_Zombies_Killed").. ": " .. tostring(self.localPlayer:getZombieKills()), 90, nextLabelY());
+    local killsY = nextLabelY();
+    self:addLabel(getText("IGUI_char_Zombies_Killed").. ": " .. tostring(self.localPlayer:getZombieKills()), 90, killsY);
+    local editKillsBtn = ISButton:new(250, killsY - 2, 60, editButtonHeight, getTranslate("UI_PlayerEditor_EditStats"), self, self.onEditKillsButton)
     editKillsBtn:initialise()
     editKillsBtn:instantiate()
     self:addChild(editKillsBtn)
@@ -101,21 +116,26 @@ function EtherPlayerEditor:createChildren()
         chatMuted = getText("Sandbox_ThumpNoChasing_option2")
     end
 
-    self:addLabel(getText("IGUI_PlayerStats_AccessLevel") .. " ".. self.localPlayer:getRole():getName(), 300, 10);
-    self:addLabel(getText("IGUI_PlayerStats_ChatMuted").. " ".. chatMuted, 300, 30);
-    self:addLabel(getText("IGUI_char_Weight").. ": ".. tostring(math.floor(self.localPlayer:getNutrition():getWeight())), 300, 50);
-    self:addLabel(getTranslate("UI_PlayerEditor_PlayerInfo_Calories").. ": ".. tostring(math.floor(self.localPlayer:getNutrition():getCalories())), 300, 70);
+    labelRow = 0;
+    self:addLabel(getText("IGUI_PlayerStats_AccessLevel") .. " ".. self.localPlayer:getRole():getName(), 300, nextLabelY());
+    self:addLabel(getText("IGUI_PlayerStats_ChatMuted").. " ".. chatMuted, 300, nextLabelY());
+    self:addLabel(getText("IGUI_char_Weight").. ": ".. tostring(math.floor(self.localPlayer:getNutrition():getWeight())), 300, nextLabelY());
+    self:addLabel(getTranslate("UI_PlayerEditor_PlayerInfo_Calories").. ": ".. tostring(math.floor(self.localPlayer:getNutrition():getCalories())), 300, nextLabelY());
 
-    self:addLabel(getTranslate("UI_PlayerEditor_PlayerTraits_Title"), 10, self.avatarPanel.x + self.avatarPanel.height + 5, UIFont.Medium )
+    -- Раздел «Черты» располагается под моделью персонажа
+    local traitsTitleY = self.avatarPanel.y + self.avatarPanel.height + 5;
+    self:addLabel(getTranslate("UI_PlayerEditor_PlayerTraits_Title"), 10, traitsTitleY, UIFont.Medium )
 
-    self.traitsPanel = UITraitsTable:new(10, 195, self.width - 10 * 2, 180);
+    self.traitsPanel = UITraitsTable:new(10, traitsTitleY + fontHeightMedium + 5, self.width - 10 * 2, 180);
     self.traitsPanel:initialise();
     self.traitsPanel.parent = self;
     self:addChild(self.traitsPanel);
 
-    self:addLabel(getTranslate("UI_PlayerEditor_PlayerSkills_Title"), 10, self.avatarPanel.x + self.avatarPanel.height + self.traitsPanel.height, UIFont.Medium )
+    -- Раздел «Навыки» располагается под таблицей черт (а не поверх неё)
+    local skillsTitleY = self.traitsPanel.y + self.traitsPanel.height + 5;
+    self:addLabel(getTranslate("UI_PlayerEditor_PlayerSkills_Title"), 10, skillsTitleY, UIFont.Medium )
 
-    self.skillPanel = UISkillTable:new(10, self.traitsPanel.x + self.traitsPanel.height + 180, self.width - 10 * 2, 180);
+    self.skillPanel = UISkillTable:new(10, skillsTitleY + fontHeightMedium + 5, self.width - 10 * 2, 180);
     self.skillPanel:initialise();
     self.skillPanel.parent = self;
     self:addChild(self.skillPanel);

@@ -43,7 +43,9 @@ end
 function EtherMapPanel:addCheckBox(title, method, isSelected)
     local rows = self.rows;
     local checkboxX = 10;
-    local checkboxY = self.map.y + self.map.height + 10 + rows * 20;
+    -- Шаг между строками зависит от реальной высоты шрифта (B42)
+    local checkboxPitch = math.max(20, getTextManager():getFontHeight(UIFont.Small) + 6);
+    local checkboxY = self.map.y + self.map.height + 10 + rows * checkboxPitch;
 
     local checkbox = UICheckbox:new(checkboxX, checkboxY, title, isSelected, method);
     checkbox:initialise();
@@ -92,7 +94,7 @@ end
 --*********************************************************
 function EtherMapPanel:addButtonWithLabel(title, buttonTitle, func)
     local rows = self.rows;
-    local buttonY = self.map.y + self.map.height + 10 + rows * 25;
+    local buttonY = self.map.y + self.map.height + 10 + rows * math.max(25, getTextManager():getFontHeight(UIFont.Small) + 9);
     
     self:addLabel(10, buttonY - 3, title)
     local button = self:addButton(self:getWidth() - 130 - 20, buttonY, buttonTitle, func)
@@ -114,7 +116,13 @@ function EtherMapPanel:createChildren()
 
     if self.localPlayer == nil then return end;
 
-    self.map = UIMap:new(10, 10, self.width - 20, self.height - 200)
+    -- Высота карты подстраивается под нижний блок (кнопка + 4 чекбокса) с учётом высоты шрифта
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local checkboxPitch = math.max(20, fontHeightSmall + 6);
+    local buttonPitch = math.max(25, fontHeightSmall + 9);
+    local bottomBlockHeight = 10 + buttonPitch + 4 * checkboxPitch + 20;
+
+    self.map = UIMap:new(10, 10, self.width - 20, math.max(100, self.height - bottomBlockHeight))
     self.map:initialise()
     self.map:instantiate()
     self.map:initDataAndStyle()

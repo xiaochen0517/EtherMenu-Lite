@@ -15,6 +15,13 @@ function EtherSettingsPanel:addLabel(posX, posY, title)
 end
 
 --*********************************************************
+--* Высота строки элементов панели (зависит от реальной высоты шрифта B42)
+--*********************************************************
+function EtherSettingsPanel:getRowPitch()
+    return math.max(25, getTextManager():getFontHeight(UIFont.Small) + 9);
+end
+
+--*********************************************************
 --* Создание кнопки
 --*********************************************************
 function EtherSettingsPanel:addButton(posX, posY, buttonTitle, onClick, isOnlyNotInGame)
@@ -48,12 +55,12 @@ end
 --*********************************************************
 function EtherSettingsPanel:addButtonWithLabel(title, buttonTitle, func, isOnlyNotInGame)
     local rows = self.rows;
-    local buttonY = 200 + rows * 25;
+    local buttonY = 200 + rows * self:getRowPitch();
 
     self:addLabel(10, buttonY - 3, title)
     self:addButton(self:getWidth() - 130 - 10, buttonY, buttonTitle, func, isOnlyNotInGame)
 
-    self:setScrollHeight(self:getScrollHeight() + 21);
+    self:setScrollHeight(self:getScrollHeight() + self:getRowPitch() - 4);
     self.rows = self.rows + 1;
 end
 
@@ -62,7 +69,7 @@ end
 --*********************************************************
 function EtherSettingsPanel:addColorPickerWithLabel(title, func, startColor)
     local rows = self.rows;
-    local buttonY = 200 + rows * 25;
+    local buttonY = 200 + rows * self:getRowPitch();
 
     self:addLabel(10, buttonY - 3, title)
 
@@ -75,7 +82,7 @@ function EtherSettingsPanel:addColorPickerWithLabel(title, func, startColor)
     self:addChild(button);
     table.insert(self.buttonList, button);
 
-    self:setScrollHeight(self:getScrollHeight() + 24);
+    self:setScrollHeight(self:getScrollHeight() + self:getRowPitch() - 1);
     self.rows = self.rows + 1;
     return button
 end
@@ -85,12 +92,12 @@ end
 --*********************************************************
 function EtherSettingsPanel:addSliderWithLabel(title, sliderMethod, value, minValue, maxValue)
     local rows = self.rows;
-    local buttonY = 10 + rows * 25;
+    local buttonY = 200 + rows * self:getRowPitch();
 
     self:addLabel(15, buttonY - 3, title)
     self:addSlider(self:getWidth() - 200 - 50, buttonY + 3, 200, 10, value, minValue, maxValue, sliderMethod)
 
-    self:setScrollHeight(self:getScrollHeight() + 30);
+    self:setScrollHeight(self:getScrollHeight() + self:getRowPitch() + 5);
 
     self.rows = self.rows + 1;
 end
@@ -102,7 +109,8 @@ end
 function EtherSettingsPanel:addCheckBox(title, method, isSelected, isOnlyInGame)
     local rows = self.rows;
     local checkboxX = 15;
-    local checkboxY = 10 + rows * 20;
+    local checkboxPitch = math.max(20, getTextManager():getFontHeight(UIFont.Small) + 6);
+    local checkboxY = 10 + rows * checkboxPitch;
 
     local checkbox = UICheckbox:new(checkboxX, checkboxY, title, isSelected, method);
     checkbox:initialise();
@@ -154,7 +162,7 @@ function EtherSettingsPanel:createChildren()
     self.configs = ISScrollingListBox:new(10, 60, self.width - 20, 100);
     self.configs:initialise();
     self.configs:instantiate();
-    self.configs.itemheight = 24
+    self.configs.itemheight = math.max(24, getTextManager():getFontHeight(UIFont.Small) + 10)
     self.configs.selected = 0;
     self.configs.joypadParent = self;
     self.configs.font = UIFont.NewSmall;
@@ -164,7 +172,7 @@ function EtherSettingsPanel:createChildren()
     self.configs:addColumn(getTranslate("UI_Settings_ConfigName"), 0);
     self:addChild(self.configs);
 
-    self.entry = ISTextEntryBox:new("EtherConfig-"..tostring(getConfigList():size()+1), 10, self.configs.y + self.configs.height + 10, self.width / 2 - 60, 24);
+    self.entry = ISTextEntryBox:new("EtherConfig-"..tostring(getConfigList():size()+1), 10, self.configs.y + self.configs.height + 10, self.width / 2 - 60, math.max(24, getTextManager():getFontHeight(UIFont.Small) + 8));
     self.entry.font = UIFont.Small;
     self.entry:initialise();
     self.entry:instantiate();
@@ -294,7 +302,7 @@ function EtherSettingsPanel:createChildren()
     end, getZombieUIColor())
 
     -- Language selector
-    local langY = 200 + self.rows * 25;
+    local langY = 200 + self.rows * self:getRowPitch();
     self:addLabel(10, langY - 3, getTranslate("UI_Settings_LanguageLabel"))
 
     local langs = getAvailableLanguages();
@@ -309,7 +317,7 @@ function EtherSettingsPanel:createChildren()
         end
     end
 
-    self.langCombo = ISComboBox:new(self:getWidth() - 130 - 10, langY, 130, 20, self, function(target, combo)
+    self.langCombo = ISComboBox:new(self:getWidth() - 130 - 10, langY, 130, math.max(20, getTextManager():getFontHeight(UIFont.Small) + 4), self, function(target, combo)
         local selected = combo:getOptionText(combo.selected);
         setMenuLanguage(selected);
         saveConfig("startup");
@@ -321,11 +329,11 @@ function EtherSettingsPanel:createChildren()
     end
     self.langCombo.selected = langIndex;
     self:addChild(self.langCombo);
-    self:setScrollHeight(self:getScrollHeight() + 25);
+    self:setScrollHeight(self:getScrollHeight() + self:getRowPitch());
     self.rows = self.rows + 1;
 
     -- Menu key binding
-    local keyY = 200 + self.rows * 25;
+    local keyY = 200 + self.rows * self:getRowPitch();
     self:addLabel(10, keyY - 3, getTranslate("UI_Settings_MenuKeyLabel"))
 
     self.keyBindButton = UIButton:new(self:getWidth() - 130 - 10, keyY, 130, 20, getKeyName(EtherMain.menuKeyID), function ()
@@ -347,7 +355,7 @@ function EtherSettingsPanel:createChildren()
     self.keyBindButton:initialise();
     self.keyBindButton:instantiate();
     self:addChild(self.keyBindButton);
-    self:setScrollHeight(self:getScrollHeight() + 25);
+    self:setScrollHeight(self:getScrollHeight() + self:getRowPitch());
     self.rows = self.rows + 1;
     self.isListeningForKey = false;
 
@@ -392,7 +400,7 @@ function EtherSettingsPanel:drawConfigs(y, item, alt)
     end
 
 
-    self:drawText(tostring(item.item), 5 + self.columns[1].size, y + 5, 1, 1, 1, 1, UIFont.Small);
+    self:drawText(tostring(item.item), 5 + self.columns[1].size, y + (self.itemheight - getTextManager():getFontHeight(UIFont.Small)) / 2, 1, 1, 1, 1, UIFont.Small);
 
     return y + self.itemheight;
 end

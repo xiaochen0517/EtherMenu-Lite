@@ -6,13 +6,19 @@ require "ISUI/ISPanel"
 UIMechanics = ISPanel:derive("UIMechanics"); -- Наследование от ISPanel
 UIMechanics.instance = nil;
 
-local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small)
-
 --*********************************************************
 --* Создание дочерних элементов
 --*********************************************************
 function UIMechanics:createChildren()
     ISPanel.createChildren(self);
+
+    -- В B42 высота шрифта динамическая, вся геометрия считается от неё
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+    local fontHeightMedium = getTextManager():getFontHeight(UIFont.Medium);
+    self.titleBarHeight = math.max(20, fontHeightSmall + 6);
+
+    -- Шапка: название машины (Medium) + 3 строки информации (Small)
+    self.headerHeight = self.titleBarHeight + 10 + fontHeightMedium + 8 + 3 * (fontHeightSmall + 6) + 10;
 
     self.closeButton = ISButton:new(3, 0, 20, 20, "", self, function(self, button) self:close() end);
 	self.closeButton:initialise();
@@ -22,7 +28,10 @@ function UIMechanics:createChildren()
 	self.closeButton:setImage(self.closeTexture);
 	self:addChild(self.closeButton);
 
-    self.datas = ISScrollingListBox:new(10, 130, self.width - 20, self.height - 200);
+    -- Кнопки занимают две строки внизу окна
+    local buttonHeight = math.max(20, fontHeightSmall + 8);
+    local buttonsBlockHeight = 2 * buttonHeight + 3 * 10;
+    self.datas = ISScrollingListBox:new(10, self.headerHeight, self.width - 20, self.height - self.headerHeight - buttonsBlockHeight - 10);
     self.datas:initialise();
     self.datas:instantiate();
     self.datas.itemheight = fontHeightSmall + 4 * 2
@@ -153,7 +162,8 @@ function UIMechanics:drawDatas(y, item, alt)
     -- Устанавливаем маску для первого столбца
     self:suspendStencil()
     self:setStencilRect(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
-    self:drawText(getText("IGUI_VehiclePart" .. item.item:getId()), 5, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    local textY = y + (self.itemheight - getTextManager():getFontHeight(UIFont.Small)) / 2;
+    self:drawText(getText("IGUI_VehiclePart" .. item.item:getId()), 5, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
     -- Удаляем маску
     self:clearStencilRect()
     self:resumeStencil()
@@ -168,9 +178,9 @@ function UIMechanics:drawDatas(y, item, alt)
     else
         amount = "-"
     end
-    self:drawText(tostring(item.item:getCondition()).."%", self.columns[2].size + 10, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
-    self:drawText(amount, self.columns[3].size + 10, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
-    self:drawText(getText("IGUI_VehiclePartCat" ..category), self.columns[4].size + 10, y + 4, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    self:drawText(tostring(item.item:getCondition()).."%", self.columns[2].size + 10, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    self:drawText(amount, self.columns[3].size + 10, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
+    self:drawText(getText("IGUI_VehiclePartCat" ..category), self.columns[4].size + 10, textY, textPartColor.r, textPartColor.g, textPartColor.b, textPartColor.a, UIFont.Small);
 
     return y + self.itemheight;
 end
@@ -180,8 +190,9 @@ end
 function UIMechanics:prerender()
     ISPanel.prerender(self)
 
-	self:drawRect( 0, 0, self.width, 20, 1.0, 0, 0, 0, 0.5)
-	self:drawTextCentre(self.title, self:getWidth() / 2, 1, 1, 1, 1, 1, UIFont.Small);
+	self:drawRect( 0, 0, self.width, self.titleBarHeight, 1.0, 0, 0, 0, 0.5)
+	local titleY = (self.titleBarHeight - getTextManager():getFontHeight(UIFont.Small)) / 2;
+	self:drawTextCentre(self.title, self:getWidth() / 2, titleY, 1, 1, 1, 1, UIFont.Small);
 	
 end
 
@@ -210,11 +221,18 @@ function UIMechanics:render()
             name = getText("IGUI_VehicleNameBurntCar", name);
 	    end
 
-        self:drawTextCentre( name, self.width / 2, 20, 1.0, 1.0, 1.0, 1.0, UIFont.Medium);
-        self:drawTextCentre( getText("IGUI_OverallCondition")..": "..tostring(self.totalCondition) .. "%", self.width / 2, 40, 1.0, 1.0, 1.0, 1.0, UIFont.Small);
-        self:drawTextCentre( getText("IGUI_char_Weight")..": "..tostring(vehicle:getMass()), self.width / 2, 60, 1.0, 1.0, 1.0, 1.0, UIFont.Small);
+        -- Строки информации идут друг за другом с шагом, зависящим от высоты шрифта
+        local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
+        local fontHeightMedium = getTextManager():getFontHeight(UIFont.Medium);
+        local y = self.titleBarHeight + 10;
+        self:drawTextCentre( name, self.width / 2, y, 1.0, 1.0, 1.0, 1.0, UIFont.Medium);
+        y = y + fontHeightMedium + 8;
+        self:drawTextCentre( getText("IGUI_OverallCondition")..": "..tostring(self.totalCondition) .. "%", self.width / 2, y, 1.0, 1.0, 1.0, 1.0, UIFont.Small);
+        y = y + fontHeightSmall + 6;
+        self:drawTextCentre( getText("IGUI_char_Weight")..": "..tostring(vehicle:getMass()), self.width / 2, y, 1.0, 1.0, 1.0, 1.0, UIFont.Small);
         if vehicle:getPartById("Engine") then
-		    self:drawTextCentre(getText("IGUI_EnginePower") .. ": " .. (vehicle:getEnginePower()/10) .. " hp", self.width / 2, 80, 1, 1, 1, 1, UIFont.Small);
+            y = y + fontHeightSmall + 6;
+		    self:drawTextCentre(getText("IGUI_EnginePower") .. ": " .. (vehicle:getEnginePower()/10) .. " hp", self.width / 2, y, 1, 1, 1, 1, UIFont.Small);
 	    end
 
         if self.datas.items[self.datas.selected] ~= nil then

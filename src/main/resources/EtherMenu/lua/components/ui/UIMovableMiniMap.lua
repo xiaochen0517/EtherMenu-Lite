@@ -42,8 +42,10 @@ end
 function UIMovableMiniMap:prerender()
     ISPanel.prerender(self)
 
-	self:drawRect( 0, 0, self.width, 20, 1.0, 0, 0, 0, 0.5)
-	self:drawTextCentre(self.title, self:getWidth() / 2, 1, 1, 1, 1, 1, UIFont.Small);
+    -- Высота строки заголовка подстраивается под реальную высоту шрифта (B42)
+    local titleBarHeight = math.max(20, getTextManager():getFontHeight(UIFont.Small) + 6);
+	self:drawRect( 0, 0, self.width, titleBarHeight, 1.0, 0, 0, 0, 0.5)
+	self:drawTextCentre(self.title, self:getWidth() / 2, (titleBarHeight - getTextManager():getFontHeight(UIFont.Small)) / 2, 1, 1, 1, 1, 1, UIFont.Small);
 	
 end
 

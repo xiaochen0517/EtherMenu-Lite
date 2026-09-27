@@ -5,8 +5,6 @@ require "ISUI/ISPanel"
 --*********************************************************
 UIItemTables = ISPanel:derive("UIItemTables");
 
-local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small)
-
 --*********************************************************
 --* Обработка render
 --*********************************************************
@@ -23,7 +21,21 @@ end
 function UIItemTables:createChildren()
     ISPanel.createChildren(self);
 
-    self.datas = ISScrollingListBox:new(0, 25, self.width, self.height - 150);
+    -- В B42 высота шрифта динамическая, вся геометрия считается от неё
+    local textManager = getTextManager();
+    local fontHeightSmall = textManager:getFontHeight(UIFont.Small);
+    local fontHeightMedium = textManager:getFontHeight(UIFont.Medium);
+
+    local entryHeight = math.max(20, fontHeightSmall + 6);
+    local buttonHeight = math.max(24, fontHeightSmall + 8);
+
+    -- Блок внизу окна: строка кнопок, затем заголовки фильтров и поля ввода
+    local buttonsY = self.height - 10 - buttonHeight;
+    local filterTitleY = buttonsY - 10 - fontHeightMedium;
+    local filterEntryY = filterTitleY - 5 - entryHeight;
+    local bottomBlockHeight = self.height - filterEntryY;
+
+    self.datas = ISScrollingListBox:new(0, 25, self.width, math.max(50, self.height - 25 - bottomBlockHeight));
     self.datas:initialise();
     self.datas:instantiate();
     self.datas.itemheight = fontHeightSmall + 4 * 2
@@ -36,12 +48,12 @@ function UIItemTables:createChildren()
     self.datas:addColumn(getTranslate("UI_ItemCreator_Title_ItemCategory"), 250)
     self:addChild(self.datas);
 
-    self.filterByNameTitle = ISLabel:new(0, self.height - 40, 20, getTranslate("UI_ItemCreator_Title_FilterByName"), 1, 1, 1, 1, UIFont.Medium, true)
+    self.filterByNameTitle = ISLabel:new(0, filterTitleY, fontHeightMedium, getTranslate("UI_ItemCreator_Title_FilterByName"), 1, 1, 1, 1, UIFont.Medium, true)
     self.filterByNameTitle:initialise()
     self.filterByNameTitle:instantiate()
     self:addChild(self.filterByNameTitle)
 
-    self.filterByName = ISTextEntryBox:new("", 0, self.height - 20, self.width / 2 - 10, 20);
+    self.filterByName = ISTextEntryBox:new("", 0, filterEntryY, self.width / 2 - 10, entryHeight);
     self.filterByName.font = UIFont.Small;
     self.filterByName:initialise();
     self.filterByName:instantiate();
@@ -52,12 +64,12 @@ function UIItemTables:createChildren()
     self:addChild(self.filterByName);
     table.insert(self.filterWidgets, self.filterByName);
 
-    self.filterByIdTitle = ISLabel:new(self.width / 2, self.height - 40, 20, getTranslate("UI_ItemCreator_Title_FilterById"), 1, 1, 1, 1, UIFont.Medium, true)
+    self.filterByIdTitle = ISLabel:new(self.width / 2, filterTitleY, fontHeightMedium, getTranslate("UI_ItemCreator_Title_FilterById"), 1, 1, 1, 1, UIFont.Medium, true)
     self.filterByIdTitle:initialise()
     self.filterByIdTitle:instantiate()
     self:addChild(self.filterByIdTitle)
 
-    self.filterById = ISTextEntryBox:new("", self.width / 2, self.height - 20, self.width / 2, 20);
+    self.filterById = ISTextEntryBox:new("", self.width / 2, filterEntryY, self.width / 2, entryHeight);
     self.filterById.font = UIFont.Small;
     self.filterById:initialise();
     self.filterById:instantiate();
@@ -68,7 +80,7 @@ function UIItemTables:createChildren()
     self:addChild(self.filterById);
     table.insert(self.filterWidgets, self.filterById);
 
-    self.addItemX1 = UIButton:new(0, self.height - 80, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX1"), 
+    self.addItemX1 = UIButton:new(0, buttonsY, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX1"), 
     function() 
         local item = self.datas.items[self.datas.selected].item;
         giveItem(item:getFullName(), 1);
@@ -83,7 +95,7 @@ function UIItemTables:createChildren()
     self:addChild(self.addItemX1);
     table.insert(self.buttonList, self.addItemX1);
 
-    self.addItemX2 = UIButton:new(self.addItemX1:getX() + self.addItemX1.width + 10, self.height - 80, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX2"), 
+    self.addItemX2 = UIButton:new(self.addItemX1:getX() + self.addItemX1.width + 10, buttonsY, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX2"), 
     function() 
         local item = self.datas.items[self.datas.selected].item;
         giveItem(item:getFullName(), 2);
@@ -98,7 +110,7 @@ function UIItemTables:createChildren()
     self:addChild(self.addItemX2);
     table.insert(self.buttonList, self.addItemX2);
 
-    self.addItemX5 = UIButton:new(self.addItemX2:getX() + self.addItemX2.width + 10, self.height - 80, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX5"), 
+    self.addItemX5 = UIButton:new(self.addItemX2:getX() + self.addItemX2.width + 10, buttonsY, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX5"), 
     function() 
         local item = self.datas.items[self.datas.selected].item;
         giveItem(item:getFullName(), 5);
@@ -113,7 +125,7 @@ function UIItemTables:createChildren()
     self:addChild(self.addItemX5);
     table.insert(self.buttonList, self.addItemX5);
 
-    self.addItemX10 = UIButton:new(self.addItemX5:getX() + self.addItemX5.width + 10, self.height - 80, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX10"), 
+    self.addItemX10 = UIButton:new(self.addItemX5:getX() + self.addItemX5.width + 10, buttonsY, 100, 24, getTranslate("UI_ItemCreator_Button_AddItemX10"), 
     function() 
         local item = self.datas.items[self.datas.selected].item;
         giveItem(item:getFullName(), 10);
@@ -230,6 +242,7 @@ function UIItemTables:drawDatas(y, item, alt)
 
     self:drawRectBorder(0, y, self:getWidth(), self.itemheight, a, self.borderColor.r, self.borderColor.g, self.borderColor.b);
 
+    local fontHeightSmall = getTextManager():getFontHeight(UIFont.Small);
     local iconX = 4
     local iconSize = fontHeightSmall;
 
@@ -239,13 +252,14 @@ function UIItemTables:drawDatas(y, item, alt)
     local clipY2 = math.min(self.height, y + self:getYScroll() + self.itemheight)
     
     self:setStencilRect(clipX, clipY, clipX2 - clipX, clipY2 - clipY)
-    self:drawText(item.item:getDisplayName(), 25, y + 4, 1, 1, 1, a, self.font);
+    local textY = y + (self.itemheight - fontHeightSmall) / 2;
+    self:drawText(item.item:getDisplayName(), 25, textY, 1, 1, 1, a, self.font);
     self:clearStencilRect()
 
     if item.item:getDisplayCategory() ~= nil then
-        self:drawText(getText("IGUI_ItemCat_" .. item.item:getDisplayCategory()), self.columns[2].size + 10, y + 4, 1, 1, 1, a, self.font);
+        self:drawText(getText("IGUI_ItemCat_" .. item.item:getDisplayCategory()), self.columns[2].size + 10, textY, 1, 1, 1, a, self.font);
     else
-        self:drawText("<NONE>", self.columns[2].size + 10, y + 4, 1, 1, 1, a, self.font);
+        self:drawText("<NONE>", self.columns[2].size + 10, textY, 1, 1, 1, a, self.font);
     end
     
     self:repaintStencilRect(0, clipY, self.width - 20, clipY2 - clipY)

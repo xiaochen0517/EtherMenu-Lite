@@ -6,7 +6,7 @@ require "ISUI/ISPanel"
 EtherInfoPanel = ISPanel:derive("EtherInfoPanel"); -- Наследование от ISPanel
 
 --*********************************************************
---* Метод рисования текста по середние
+--* Метод рисования текста по середие
 --*********************************************************
 function EtherInfoPanel:drawTextCentered(text, y, r, g, b, a, font)
     local x = self.width / 2 - (getTextManager():MeasureStringX(font, text) / 2)
@@ -14,12 +14,48 @@ function EtherInfoPanel:drawTextCentered(text, y, r, g, b, a, font)
 end
 
 --*********************************************************
+--* Создание дочерних элементов
+--*********************************************************
+function EtherInfoPanel:createChildren()
+    ISPanel.createChildren(self);
+
+    -- Панель прокручивается: при крупном шрифте текст может не влезть целиком
+    self:setScrollChildren(true);
+    self:setScrollHeight(0);
+    self:addScrollBars();
+end
+
+--*********************************************************
+--* Обработка prerender
+--*********************************************************
+function EtherInfoPanel:prerender()
+    self:setStencilRect(0, 10, self:getWidth(), self:getHeight() - 20);
+    ISPanel.prerender(self);
+end
+
+--*********************************************************
+--* Обработка событий колесика мыши
+--*********************************************************
+function EtherInfoPanel:onMouseWheel(del)
+    self:setYScroll(self:getYScroll() - (del * 40));
+    return true;
+end
+
+--*********************************************************
 --* Отрисовка текста
 --*********************************************************
 function EtherInfoPanel:render()
+    ISPanel.render(self);
+
+    -- В B42 высота шрифта динамическая (зависит от настроек отображения),
+    -- поэтому все межстрочные отступы считаются от реальной высоты шрифта
+    local textManager = getTextManager();
+    local fontHeightSmall = textManager:getFontHeight(UIFont.Small);
+    local fontHeightMedium = textManager:getFontHeight(UIFont.Medium);
+    local marginTitle = fontHeightMedium + 8;
+    local marginText = fontHeightSmall + 5;
+
     local y = 30
-    local marginTitle = 25;
-    local marginText = 15;
     self:drawTextCentered(getTranslate("UI_InformationPanel_General_Title"), y, 1, 1, 1, 1, UIFont.Medium)
 
     y = y + marginTitle
@@ -85,12 +121,12 @@ function EtherInfoPanel:render()
     }
 
     for i, textKey in ipairs(antiCheatStatusTexts) do
-        local statusText = antiCheatStatus[i] 
+        local statusText = antiCheatStatus[i]
                         and getTranslate("UI_InformationPanel_AntiCheatStatus_Enable")
                         or getTranslate("UI_InformationPanel_AntiCheatStatus_Disable")
 
         if self.localPlayer == nil then statusText = getTranslate("UI_InformationPanel_AntiCheatStatus_Disable") end
-        
+
         self:drawTextCentered(getTranslate(textKey) .. statusText, y, 1, 1, 1, 1, UIFont.Small)
         y = y + marginText
     end
@@ -100,6 +136,14 @@ function EtherInfoPanel:render()
     self:drawTextCentered("EtherMenu", y, 0.5, 0.8, 1.0, 1.0, UIFont.Medium)
 
     y = y + marginText
+
+    -- Актуализируем высоту прокрутки по фактическому содержимому
+    local totalHeight = math.ceil(y);
+    if self:getScrollHeight() ~= totalHeight then
+        self:setScrollHeight(totalHeight);
+    end
+
+    self:clearStencilRect();
 end
 
 --*********************************************************
@@ -111,8 +155,8 @@ function EtherInfoPanel:new(posX, posY, width, height)
     menuTableData = ISPanel:new(posX, posY, width, height);
     setmetatable(menuTableData, self);
     menuTableData.background = true;
-	menuTableData.backgroundColor = {r=0.0, g=0.0, b=0.0, a=0.0};
-	menuTableData.borderColor = {r=0.0, g=0.0, b=0.0, a=0.0};
+    menuTableData.backgroundColor = {r=0.0, g=0.0, b=0.0, a=0.0};
+    menuTableData.borderColor = {r=0.0, g=0.0, b=0.0, a=0.0};
     menuTableData.moveWithMouse = true;
     menuTableData.localPlayer = getPlayer();
     self.__index = self;
